@@ -6,6 +6,14 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-07
 
+- **Home and End jump to the first and last option in any menu.** They already
+  did this inside submenus like Attributes and Skills in the stats window, but not
+  in ordinary menus, so getting to the bottom of a long list — your inventory, a
+  merchant's stock, the save list — meant holding Down. They now work the same way
+  everywhere. Options that are hidden or belong to an inactive tab are skipped, so
+  you always land somewhere you can actually use. Where a window already uses
+  these keys for something else — the sliders when editing a spell effect, or a
+  text box you are typing in — that behaviour is unchanged.
 - **Braille display support.** Everything the mod announces is now sent to a
   braille display as well as spoken, on screen readers that drive one (NVDA and
   JAWS). Previously it was speech only, so a braille user got nothing. There is

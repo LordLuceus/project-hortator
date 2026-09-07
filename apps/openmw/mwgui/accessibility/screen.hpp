@@ -261,6 +261,7 @@ namespace MWGui::A11y
         bool mAnnounceInterrupt = false;
         void moveSelection(int delta);
         void jumpSection(int delta);  // Ctrl+Up/Down: jump between top-level sections
+        void jumpEdge(bool last);     // Home/End: jump to the first / last option
         void changeValue(bool next);
         void activateCurrent();
         void cycleTooltip(bool forward);

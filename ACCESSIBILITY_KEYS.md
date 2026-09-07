@@ -157,6 +157,7 @@ These work in every accessible menu and window unless that window says otherwise
 | --- | --- |
 | **Up / Down** | Previous / next option |
 | **Ctrl + Up / Down** | Jump to the previous / next section |
+| **Home / End** | Jump to the first / last option |
 | **Left / Right** | Change the focused option's value |
 | **Enter** or **Space** | Activate the option — open a submenu, run the action, or start editing a text box |
 | **T** | Cycle the extra detail lines for the focused option (an item's weight, value and so on) |
@@ -462,7 +463,8 @@ Most keys do one job everywhere. These don't, so they're worth knowing:
 | **Up / Down** | Journal, while reading: turn a page spread. Books: move by paragraph. Elsewhere: move between options |
 | **Enter** | In the world: face the target. Accessible HUD: open the active-effects row. Your inventory: equip or use the item. Container or companion: move the item across. Barter: choose how many. Save/Load: load, or overwrite. Menus: activate the option, or start editing a text box |
 | **R** | Conversations, the journal while reading, a Yes/No message box, the class quiz: repeat what was just spoken. Menus, lists and books: nothing — arrow off the row and back instead. In the world: Morrowind's own ready / put away magic |
-| **Home** | In the world: repeat the target. Accessible HUD: re-read the current row. Submenus: jump to the first item. On a slider: lowest value. While typing: start of the line |
+| **Home** | In the world: repeat the target. Accessible HUD: re-read the current row. Menus and submenus: jump to the first option. On a slider: lowest value. While typing: start of the line |
+| **End** | Menus and submenus: jump to the last option. In the world: clear the selection. On a slider: highest value. While typing: end of the line |
 | **Escape** | While typing: stop editing. In a submenu: close the submenu. Journal lists: go back a level. Otherwise: close the window |
 
 ---

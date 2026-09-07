@@ -557,6 +557,41 @@ namespace MWGui::A11y
         }
     }
 
+    void Screen::jumpEdge(bool last)
+    {
+        const size_t count = mElements.size();
+        if (count == 0)
+            return;
+
+        // Scan inward from the requested end for the first NAVIGABLE option.
+        // Unlike submenu items, top-level elements can be hidden or disabled --
+        // options belonging to an inactive tab, for instance -- so the first or
+        // last element is not necessarily selectable. Landing on one would either
+        // announce an option the player cannot use or, worse, silently do nothing.
+        if (last)
+        {
+            for (size_t i = count; i-- > 0;)
+            {
+                if (isUsable(i))
+                {
+                    select(i, /*announce=*/true);
+                    return;
+                }
+            }
+        }
+        else
+        {
+            for (size_t i = 0; i < count; ++i)
+            {
+                if (isUsable(i))
+                {
+                    select(i, /*announce=*/true);
+                    return;
+                }
+            }
+        }
+    }
+
     void Screen::changeValue(bool next)
     {
         const Element* element = current();
@@ -1235,6 +1270,18 @@ namespace MWGui::A11y
                 break;
             case MyGUI::KeyCode::ArrowLeft:
                 changeValue(/*next=*/false);
+                break;
+            case MyGUI::KeyCode::Home:
+                // Same as inside an expandable submenu, where Home/End have always
+                // jumped to the first/last child. Ordinary menus were left out, so
+                // reaching the end of a long list meant holding Down. Screens that
+                // want these keys for something else (the spellmaking sliders'
+                // min/max, an edit field's line start/end) claim them in their
+                // extra-key handler or edit mode, both of which run earlier.
+                jumpEdge(/*last=*/false);
+                break;
+            case MyGUI::KeyCode::End:
+                jumpEdge(/*last=*/true);
                 break;
             case MyGUI::KeyCode::T:
                 cycleTooltip(/*forward=*/!MyGUI::InputManager::getInstance().isShiftPressed());
