@@ -662,9 +662,17 @@ namespace MWGui::A11y
                 mTooltipIndex = forward ? 0 : mTooltipLines.size() - 1;
         }
 
+        // interrupt=true on every tooltip line: T is pressed repeatedly to walk a
+        // stack of detail lines, and each press is a request for THIS line now.
+        // Queueing them meant holding T built a backlog that read long after the
+        // key was released, so the speech lagged behind the line the player was
+        // actually on -- the same reason the scanner interrupts on a held cycle
+        // key. Unlike a focus announcement (which queues so a label and its value
+        // read as one utterance), a tooltip line is self-contained and supersedes
+        // the previous one.
         if (mTooltipLines.empty())
         {
-            say("No description available.");
+            say("No description available.", /*interrupt=*/true);
             return;
         }
 
@@ -675,7 +683,8 @@ namespace MWGui::A11y
         }
 
         // Position indicator goes at the END (project convention).
-        say(withPosition(mTooltipLines[mTooltipIndex], mTooltipIndex, mTooltipLines.size()));
+        say(withPosition(mTooltipLines[mTooltipIndex], mTooltipIndex, mTooltipLines.size()),
+            /*interrupt=*/true);
     }
 
     void Screen::openSubmenu()
@@ -931,9 +940,10 @@ namespace MWGui::A11y
                 mSubTooltipIndex = forward ? 0 : mSubTooltipLines.size() - 1;
         }
 
+        // interrupt=true, as in cycleTooltip -- see the note there.
         if (mSubTooltipLines.empty())
         {
-            say("No description available.");
+            say("No description available.", /*interrupt=*/true);
             return;
         }
 
@@ -943,7 +953,8 @@ namespace MWGui::A11y
             mSubTooltipIndex = forward ? (mSubTooltipIndex + 1) % count : (mSubTooltipIndex + count - 1) % count;
         }
 
-        say(withPosition(mSubTooltipLines[mSubTooltipIndex], mSubTooltipIndex, mSubTooltipLines.size()));
+        say(withPosition(mSubTooltipLines[mSubTooltipIndex], mSubTooltipIndex, mSubTooltipLines.size()),
+            /*interrupt=*/true);
     }
 
     void Screen::resetHint()

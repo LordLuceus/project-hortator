@@ -6,6 +6,11 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-07
 
+- **Detail lines read by T keep up with you.** Each press of **T** now cuts off
+  the previous line instead of queueing behind it, so pressing T repeatedly
+  through a long stack of detail lines no longer builds a backlog that carries on
+  reading after you have stopped. You hear the line you are on, not the one you
+  were on several presses ago.
 - **Home and End jump to the first and last option in any menu.** They already
   did this inside submenus like Attributes and Skills in the stats window, but not
   in ordinary menus, so getting to the bottom of a long list — your inventory, a
