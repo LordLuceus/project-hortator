@@ -164,6 +164,7 @@ namespace MWGui
 
         /// @return true if stale keywords were updated successfully
         bool setKeywords(const std::list<std::string>& keyWord);
+        void a11yAnnounceNewTopics(const std::vector<std::string>& added);
 
         void addResponse(std::string_view title, std::string_view text, bool needMargin = true);
 
@@ -223,6 +224,9 @@ namespace MWGui
 
         bool mIsCompanion;
         std::list<std::string> mKeywords;
+        // Screen reader: false until this conversation's opening topic list has
+        // been seen, so that list is not announced as newly unlocked topics.
+        bool mA11yTopicsKnown = false;
 
         std::vector<std::unique_ptr<DialogueText>> mHistoryContents;
         std::vector<std::pair<std::string, int>> mChoices;

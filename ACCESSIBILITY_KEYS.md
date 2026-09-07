@@ -206,6 +206,11 @@ Empty positions read as "blank"; spaces, tabs and line breaks are spoken by name
 | **D** | Announce the character's disposition toward you |
 | **R** | Re-read what was just said |
 
+When something a character says opens up a new topic, it is announced right after
+their line -- "New topic: Caius Cosades." Several at once are read out together,
+and a long list is shortened to the first few and a count. You no longer have to
+scroll the topic list after every answer to notice that a lead has appeared.
+
 ---
 
 ## Inventory, containers and companions

@@ -4,6 +4,18 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-07
+
+- **New conversation topics are announced as they appear.** When a character
+  mentions something that opens up a new topic, the only way to notice was to
+  scroll the whole topic list after every answer, so an important lead dropped in
+  passing was easy to miss completely. New topics are now read out straight after
+  the line that unlocked them — "New topic: Caius Cosades." Several at once are
+  read together, and a long list is shortened to the first few plus a count so it
+  doesn't stand between you and the conversation. The announcement waits for the
+  character to finish speaking, and **R** still repeats their line rather than the
+  announcement.
+
 ## 2026-08-29
 
 - **Follow the topic links in your journal.** Journal text mentions topics you

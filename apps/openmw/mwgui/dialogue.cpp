@@ -37,6 +37,7 @@
 #include "accessibility/speech.hpp"
 
 #include <algorithm>
+#include <set>
 #include <functional>
 
 #include <MyGUI_InputManager.h>
@@ -578,6 +579,9 @@ namespace MWGui
         {
             // The history is not reset here
             mKeywords.clear();
+            // A different actor means a fresh topic list, so the next update is
+            // this conversation's opening list rather than an unlock to announce.
+            mA11yTopicsKnown = false;
             mTopicsList->clear();
             for (auto& link : mLinks)
                 mDeleteLater.push_back(
@@ -686,10 +690,75 @@ namespace MWGui
     {
         if (mKeywords == keyWords && isCompanion() == mIsCompanion)
             return false;
+        // Announce topics the NPC's line just unlocked. A sighted player sees them
+        // appear in the topics pane; by ear the only way to notice was to scroll
+        // the whole list after every response, so a lead mentioned in passing was
+        // easy to miss entirely. Collect them BEFORE mKeywords is overwritten,
+        // since that is the old list we are diffing against.
+        //
+        // Suppressed on the first update of a conversation (mA11yTopicsKnown),
+        // where every topic the NPC offers is "new" relative to an empty list:
+        // that is the opening list, not something the player just unlocked, and
+        // reading it out in full would bury the greeting.
+        std::vector<std::string> added;
+        if (mA11yTopicsKnown)
+        {
+            const std::set<std::string> before(mKeywords.begin(), mKeywords.end());
+            for (const std::string& keyword : keyWords)
+            {
+                if (!before.count(keyword))
+                    added.push_back(keyword);
+            }
+        }
+        mA11yTopicsKnown = true;
+
         mIsCompanion = isCompanion();
         mKeywords = keyWords;
         updateTopicsPane();
+        a11yAnnounceNewTopics(added);
         return true;
+    }
+
+    // Speak the topics a response just made available, after the response itself.
+    //
+    // QUEUED (interrupt=false), like the "your journal has been updated" class of
+    // notification this sits alongside: the NPC's line is spoken with
+    // interrupt=true and must not be cut off by its own side effects. Plain say(),
+    // not sayRereadable(), so R still repeats the dialogue line rather than this.
+    //
+    // Named rather than counted ("New topic: Caius Cosades") because the name IS
+    // the actionable part -- a bare count would still force a walk of the list,
+    // which is the problem this solves. Long unlocks are capped: a few names are
+    // an orientation, twenty are an obstacle between the player and the
+    // conversation, and the topics pane still holds the full set.
+    void DialogueWindow::a11yAnnounceNewTopics(const std::vector<std::string>& added)
+    {
+        if (added.empty())
+            return;
+
+        constexpr size_t maxNamed = 4;
+        std::string text;
+        if (added.size() == 1)
+            text = "New topic: " + added.front();
+        else
+        {
+            text = "New topics: ";
+            const size_t named = std::min(added.size(), maxNamed);
+            for (size_t i = 0; i < named; ++i)
+            {
+                if (i != 0)
+                    text += ", ";
+                text += added[i];
+            }
+            if (added.size() > named)
+            {
+                text += ", and ";
+                text += std::to_string(added.size() - named);
+                text += " more";
+            }
+        }
+        text += '.';
+        A11y::say(text, /*interrupt=*/false);
     }
 
     void DialogueWindow::redrawTopicsList()
