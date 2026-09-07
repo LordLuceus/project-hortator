@@ -26,6 +26,11 @@ see **Reporting problems** at the bottom.
 2. **A screen reader running.** NVDA is recommended and tested. The build also
    supports SAPI, Windows Narrator (OneCore), and JAWS.
 
+Everything the mod says is also sent to a **braille display** if you use one, on
+screen readers that support it (NVDA and JAWS). There is nothing to turn on. Note
+that this has not been tested on real hardware — if you use a display and
+something reads oddly, please report it.
+
 ---
 
 ## Installing

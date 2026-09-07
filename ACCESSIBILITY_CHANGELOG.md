@@ -6,6 +6,12 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-07
 
+- **Braille display support.** Everything the mod announces is now sent to a
+  braille display as well as spoken, on screen readers that drive one (NVDA and
+  JAWS). Previously it was speech only, so a braille user got nothing. There is
+  nothing to configure, and nothing changes if you don't use a display. This has
+  not been tested on real hardware — reports welcome. Thanks to Ohylli who
+  requested this and pointed at the fix.
 - **New conversation topics are announced as they appear.** When a character
   mentions something that opens up a new topic, the only way to notice was to
   scroll the whole topic list after every answer, so an important lead dropped in

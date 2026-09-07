@@ -86,10 +86,20 @@ namespace Accessibility
         // Prism takes a null-terminated C string; std::string_view is not
         // guaranteed to be null-terminated, so copy into a temp std::string.
         const std::string buf(text);
-        const PrismError err = prism_backend_speak(mBackend, buf.c_str(), interrupt);
+        // output() rather than speak(): on the screen readers that drive a braille
+        // display (NVDA, JAWS) it both speaks the text and sends it to the
+        // display, so a braille user gets the same output a speech user does. On
+        // backends with no braille channel (SAPI, UIA) it is exactly speak(), so
+        // this costs nothing where braille is unavailable.
+        const PrismError err = prism_backend_output(mBackend, buf.c_str(), interrupt);
         if (err != PRISM_OK)
         {
-            Log(Debug::Warning) << "Accessibility: speak failed: " << prism_error_string(err);
+            // NVDA and JAWS report the braille leg's failure even when the speech
+            // leg succeeded, so this can fire on a machine with no display
+            // connected. Log at Debug, not Warning: the audible output is fine and
+            // the player has nothing to act on. No caller branches on the return
+            // value, so reporting false here changes nothing but the log.
+            Log(Debug::Debug) << "Accessibility: output failed: " << prism_error_string(err);
             return false;
         }
         return true;
