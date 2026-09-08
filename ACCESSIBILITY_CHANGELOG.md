@@ -4,6 +4,16 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-08
+
+- **A clearer direction out of the Census and Excise Office.** In Seyda Neen, once
+  the guard tells you to continue through to the next building and talk to Sellus
+  Gravius, a short message now adds which way to go: the door to the courtyard is
+  in the northeast corner. The office is a single cell split across two buildings
+  with a courtyard between them, so Sellus Gravius appears in the scanner from the
+  moment you walk in even though there is no way to reach him directly -- which
+  made this the most common place for new players to get stuck.
+
 ## 2026-09-07
 
 - **Detail lines read by T keep up with you.** Each press of **T** now cuts off

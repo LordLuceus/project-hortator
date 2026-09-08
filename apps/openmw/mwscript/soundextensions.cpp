@@ -13,6 +13,8 @@
 #include "../mwbase/soundmanager.hpp"
 #include "../mwbase/world.hpp"
 
+#include "../mwaccessibility/tutorialhints.hpp"
+
 #include "../mwworld/class.hpp"
 #include "../mwworld/inventorystore.hpp"
 
@@ -44,6 +46,8 @@ namespace MWScript
 
                 if (Settings::gui().mSubtitles)
                     MWBase::Environment::get().getWindowManager()->subtitleBox(text);
+
+                MWAccessibility::onScriptedSay(file);
             }
         };
 
