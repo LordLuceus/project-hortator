@@ -4,6 +4,18 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-14
+
+- **Auto-walk now moves at your normal speed instead of always running.** It uses
+  exactly the same controls as moving under your own steam: you walk by default,
+  you run while you hold your run key (**Shift** unless you have rebound it), and
+  it is the other way round if you have "always run" switched on in Controls.
+  Holding the run key does not cancel the walk, so you can change pace as you go.
+  Previously auto-walk ran everywhere and ignored both the run key and the "always
+  run" setting, which meant there was no way to travel at walking pace. Note that
+  this changes the default: unless "always run" is on, auto-walk will now walk
+  where it used to run. Requested by Ohylli.
+
 ## 2026-09-08
 
 - **A clearer direction out of the Census and Excise Office.** In Seyda Neen, once

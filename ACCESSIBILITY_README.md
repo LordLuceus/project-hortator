@@ -343,6 +343,11 @@ side.
   keys, or by selecting a new target and starting again. Jumping, sneaking and
   turning do not cancel it, and neither does Space — so you can walk to a door and
   open it the moment you arrive.
+- **It moves at your normal speed**, using the same controls as walking there
+  yourself: walking by default, running while you hold your run key (**Shift** by
+  default), and the other way round if you have "always run" switched on in
+  Controls. Holding the run key does not cancel the walk, so you can speed up and
+  slow down freely along the way.
 - On arrival it announces "Arrived at *name*." If it can't get all the way there,
   it stops, turns to face the target, and tells you how far short it is (and
   whether the target is above or below you) so you can finish on foot — the audio

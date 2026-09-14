@@ -3127,7 +3127,27 @@ namespace MWAccessibility
         controls->mYawChange = yawDelta;
         controls->mPitchChange = 0.0f;
         controls->mJump = false;
-        controls->mRun = true; // auto-walk uses running speed
+        // DELIBERATELY NOT SET: leave mRun exactly as the player's own controls
+        // left it, so auto-walk travels at whatever speed manual movement would.
+        //
+        // omw/input/playercontrols.lua computes
+        //     run = (Run action held) ~= alwaysRun
+        // and writes it to these same controls every frame from its onFrame.
+        // Lua's synchronizedUpdate runs BEFORE Scanner::onFrame (see engine.cpp),
+        // so by the time we get here the correct value is already in place and
+        // the honest thing to do is not clobber it. mwmechanics/actors.cpp only
+        // copies the engine's own run flag back into mRun for NON-player actors,
+        // so nothing else overwrites it for us.
+        //
+        // Writing `true` here (as this did until 2026-09-14) forced running and
+        // silently overrode both the Run key and the "always run" setting.
+        //
+        // The stuck/recovery manoeuvres below and the step run-up DO still force
+        // running on purpose: they are physics escapes tuned by hand at run speed,
+        // where momentum is the point. The stall detectors are safe at walk speed
+        // because they are distance- and event-based, not rate-based
+        // (kMinMoveSpeed is 30 u/s against a 100-200 u/s walk, and progress is
+        // measured in 8-unit events rather than per-frame travel).
         controls->mChanged = true;
     }
 }
