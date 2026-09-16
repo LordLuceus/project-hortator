@@ -2,6 +2,7 @@
 
 #include "itembucket.hpp"
 #include "markremap.hpp"
+#include "roads.hpp"
 #include "spokenformat.hpp"
 
 #include <SDL_keycode.h>
@@ -516,11 +517,13 @@ using MWAccessibility::kPi;
     // Subcategories for the Terrain category. Like kDetectedSubs the predicates
     // are null: Terrain's members are bare positions (not Ptrs), so the
     // filtering happens in rebuildCurrentList's Terrain branch keyed on the
-    // subcategory index, in this order: 0 = All, 1 = Hazards, 2 = Shafts.
+    // subcategory index, in this order: 0 = All, 1 = Hazards, 2 = Shafts,
+    // 3 = Roads.
     constexpr Subcategory kTerrainSubs[] = {
         { "All", nullptr },
         { "Hazards", nullptr },
         { "Shafts", nullptr },
+        { "Roads", nullptr },
     };
 
     // Returns the subcategory table for a category. Empty span (size 0) means
@@ -2019,11 +2022,11 @@ namespace MWAccessibility
         }
         if (cat == Category::Terrain)
         {
-            // Available only in a room that actually has damaging terrain or a
-            // shaft, so it's skipped when cycling through an ordinary room --
-            // most rooms have neither. Queried with subIndex 0 (All) rather than
-            // the category's current subcategory, so the category doesn't vanish
-            // just because the player left it filtered to "Shafts".
+            // Available only where there is actually damaging terrain, a shaft or
+            // a road, so it's skipped when cycling through an ordinary room --
+            // most rooms have none of the three. Queried with subIndex 0 (All)
+            // rather than the category's current subcategory, so the category
+            // doesn't vanish just because the player left it filtered to "Shafts".
             std::vector<Waypoint> features;
             collectTerrain(0, features);
             return !features.empty();
@@ -5444,9 +5447,10 @@ namespace MWAccessibility
         const osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
 
         // Subcategory indices follow kTerrainSubs: 0 = All, 1 = Hazards,
-        // 2 = Shafts.
+        // 2 = Shafts, 3 = Roads.
         const bool wantHazards = (subIndex == 0 || subIndex == 1);
         const bool wantShafts = (subIndex == 0 || subIndex == 2);
+        const bool wantRoads = (subIndex == 0 || subIndex == 3);
 
         if (wantHazards)
         {
@@ -5491,6 +5495,35 @@ namespace MWAccessibility
                 // Standing at the rim is not good enough here: levitating from
                 // beside the shaft just presses the player into the ceiling.
                 wp.mExactArrival = true;
+                out.push_back(std::move(wp));
+            }
+        }
+
+        if (wantRoads)
+        {
+            for (const RoadStretch& r : collectNearbyRoads(player))
+            {
+                Waypoint wp;
+                // Say which way the road runs where it passes nearest us. That is
+                // the one fact the generic waypoint readout (name, distance,
+                // bearing) cannot express, and it is exactly what makes an NPC's
+                // "follow the road east" actionable: the bearing tells you where
+                // the road IS, the axis tells you where it GOES. Roads that are
+                // too short or too blobby to have an honest direction (a junction,
+                // a paved forecourt) just say "Road" rather than inventing one.
+                wp.mName = "Road";
+                const std::string axis = describeRoadAxis(r.mDirection);
+                if (!axis.empty())
+                    wp.mName += ", running " + axis;
+
+                // Target the centre of the nearest road tile, at the player's own
+                // height. The land texture grid is flat data with no height of its
+                // own, and the terrain under it may rise or fall; letting the
+                // navmesh settle the Z on arrival is what every other waypoint
+                // does.
+                const osg::Vec2f centre = roadTileCentre(r.mNearest);
+                wp.mPosition = osg::Vec3f(centre.x(), centre.y(), playerPos.z());
+                wp.mReachable = true;
                 out.push_back(std::move(wp));
             }
         }

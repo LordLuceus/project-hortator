@@ -118,7 +118,7 @@ add_openmw_dir (mwstate
 
 add_openmw_dir (mwaccessibility
     scanner autowalker proximitycue spokenformat itembucket hud verticalshaft markremap hazard
-    tutorialhints
+    tutorialhints roads
     )
 
 add_openmw_dir (mwbase

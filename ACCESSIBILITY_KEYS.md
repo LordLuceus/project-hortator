@@ -84,7 +84,7 @@ here" is a much shorter list than "what is in this room".
 Four categories only appear while they have something in them: **Detected**
 (while a Detect effect is revealing something), **Waypoints** (once you have a
 map note or a Mark), **Locations** (once you have discovered a named place) and
-**Terrain** (in a cell with damaging terrain or a levitation shaft). Cycling with
+**Terrain** (near damaging terrain, a levitation shaft or a road). Cycling with
 Ctrl + Page Down skips them when they are empty, so the ring you hear is often
 shorter than ten. Their **Ctrl + number** keys always work regardless, and
 announce "0 in range" when there is nothing there — so use Ctrl + 6 … 9 to check

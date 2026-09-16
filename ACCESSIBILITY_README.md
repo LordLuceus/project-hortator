@@ -250,13 +250,14 @@ console's own title bar shows. Objects with no name are announced by id alone.
 
 ---
 
-## Terrain: hazards and shafts
+## Terrain: hazards, shafts and roads
 
-Some things that matter are features of the room itself rather than objects in
-it — a lava pool, or the open shaft that is the only way between floors of a
-Telvanni tower. These live in the scanner's **Terrain** category
-(**Ctrl + 9**), with subcategories **All**, **Hazards** and **Shafts** you can
-move between using the usual subcategory keys.
+Some things that matter are features of the landscape itself rather than objects
+in it — a lava pool, the open shaft that is the only way between floors of a
+Telvanni tower, or the road an NPC just told you to follow. These live in the
+scanner's **Terrain** category (**Ctrl + 9**), with subcategories **All**,
+**Hazards**, **Shafts** and **Roads** you can move between using the usual
+subcategory keys.
 
 Putting them in the scanner means they behave like every other target: cycle
 through them nearest first, hear what each one is with its distance and bearing,
@@ -316,6 +317,33 @@ Two things to know about that net. It waits until you have actually lost some
 health (around ten points) before it acts, so expect to be hurt a little rather
 than not at all; and it stays out of the way while something is fighting you,
 since yanking you backwards mid-combat would be worse than the damage.
+
+### Roads
+
+People give directions by landmark: *"follow the road east of Balmora"*, *"take
+the road to Pelagiad"*. Roads are painted into the landscape rather than being
+objects in it, so until now there was no way to act on that — the best you could
+do was set off in roughly the right direction.
+
+Roads now appear in the scanner under Terrain's **Roads** subcategory. Each
+entry is one continuous stretch of road near you, nearest first, and as well as
+the usual distance and bearing it tells you **which way the road runs**, for
+example *"Road, running northeast to southwest. 24 metres, east. 1 of 3."* The
+bearing tells you where the road is; the direction tells you where it goes. As with any
+other scanner entry you can face it, put the audio beacon on it, or auto-walk to
+it — which walks you to the edge of the road and leaves you standing on it.
+
+The direction is given as both ends of the road ("northeast to southwest")
+because a road has no inherent forward. Where a stretch genuinely has no single
+direction — a crossroads, or a paved area in front of a building — you'll simply
+hear *"Road"* rather than a made-up heading.
+
+This reads the same road surfaces the game's own landscape uses, so it covers
+every region's roads, and mods that paint their roads the usual way are picked up
+without any extra work. Two limits worth knowing: this is an outdoor feature, so
+there is nothing to report inside a building, and paved courtyards inside Daedric
+ruins are deliberately ignored, as they are decoration rather than a road to
+anywhere.
 
 ---
 

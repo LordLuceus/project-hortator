@@ -4,6 +4,26 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-15
+
+- **Roads can now be found with the scanner.** People give directions by
+  landmark — *"follow the road east of Balmora"*, *"take the road to Pelagiad"* —
+  and roads are painted into the landscape rather than being objects in it, so
+  there was previously no way to act on that beyond setting off in roughly the
+  right direction. Terrain (**Ctrl + 9**) has a new **Roads** subcategory
+  alongside Hazards and Shafts. Each entry is one continuous stretch of road near
+  you, and as well as its distance and bearing it tells you which way the road
+  runs, for example *"Road, running northeast to southwest. 24 metres, east.
+  1 of 3."* — so the bearing tells you where the road is and the direction tells
+  you where it goes. You can face it, beacon it or auto-walk onto it like any
+  other scanner target. The direction is given as both ends because a road has no
+  inherent forward, and a stretch with no single direction (a crossroads, or a
+  paved area outside a building) just says "Road" rather than inventing a
+  heading. This reads the game's own road surfaces, so every region is covered
+  and mods that paint roads the usual way work too; paved Daedric ruin courtyards
+  are deliberately left out, being decoration rather than a road anywhere.
+  Requested by Ohylli.
+
 ## 2026-09-14
 
 - **Auto-walk now moves at your normal speed instead of always running.** It uses

@@ -23,6 +23,7 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/verticalshaft.cpp
     mwaccessibility/markremap.cpp
     mwaccessibility/hazard.cpp
+    mwaccessibility/roads.cpp
 
     mwscript/testscripts.cpp
 )
