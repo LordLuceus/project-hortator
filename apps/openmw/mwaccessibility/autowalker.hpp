@@ -67,6 +67,23 @@ namespace MWAccessibility
         /// messages.
         const std::string& targetName() const { return mTargetName; }
 
+        /// Whether the walk that just ended ended by ARRIVING, as opposed to
+        /// being cancelled or given up on.
+        ///
+        /// Both outcomes leave isActive() false, so a caller chaining several
+        /// walks together (road following) cannot otherwise tell "this leg is
+        /// done, start the next" from "the player pressed a movement key" or
+        /// "we got stuck". Latched on arrival and cleared by the next start().
+        bool arrived() const { return mArrivedCleanly; }
+
+        /// Suppress the spoken "Arrived at X." for the current walk.
+        ///
+        /// For a chained walk each leg's arrival is an internal detail: a road
+        /// followed for a kilometre passes a road tile every seven metres, and
+        /// announcing each one would bury everything else the mod has to say.
+        /// The caller speaks its own progress instead.
+        void setSilentArrival(bool silent) { mSilentArrival = silent; }
+
     private:
         // Outcome of probing for a closed door across the path (tryOpenBlockingDoor).
         enum class DoorProbe
@@ -200,6 +217,13 @@ namespace MWAccessibility
             const osg::Vec3f& targetPos, osg::Vec3f& outSpot) const;
 
         bool mActive = false;
+        // Latched true when a walk ends by arriving; cleared on the next start().
+        // Lets a chaining caller distinguish "leg finished" from "stopped".
+        bool mArrivedCleanly = false;
+        // Suppresses the spoken arrival for the current walk (see
+        // setSilentArrival). Cleared on the next start() so it can never leak
+        // into an ordinary walk the player asked for.
+        bool mSilentArrival = false;
         // A target is either a world object (mTarget) or, for scanner
         // waypoints, a fixed position (mTargetPos with mHasPtrTarget == false).
         // mTarget is empty in the position case.

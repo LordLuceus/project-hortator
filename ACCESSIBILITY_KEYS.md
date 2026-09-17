@@ -100,7 +100,8 @@ a category rather than assuming it is missing.
 | **Shift + Enter** | Auto-walk to the target |
 | **Ctrl + Enter** | Toggle the audio beacon on the target |
 | **Ctrl + Shift + Enter** | Teleport to the target — a last resort, not fast travel. Warns you to explore properly first and asks you to confirm (you can turn the warning off once you've read it). Limited to about 58 metres, and unavailable during character creation. Followers in range come with you |
-| **Space** | Activate the target (open, take, talk). With nothing selected, works as normal Activate |
+| **Space** | Activate the target (open, take, talk). On a road, ask which way to follow it, then walk it (experimental -- see Terrain: Roads). With nothing selected, works as normal Activate |
+| **Up** / **Down** / **Left** / **Right** | Only while being asked which way to follow a road (experimental): north, south, west, east respectively. Any other key cancels |
 | **X** | Toggle lock-on to the target, so you stay aimed at it |
 | **Shift + X** | Engage: jump to the nearest hostile and lock on, in one press |
 | **K** | Mark / unmark the target as "already looked at" |
@@ -110,7 +111,8 @@ a category rather than assuming it is missing.
 
 Your forward, back, left or right movement keys cancel auto-walk. Jumping,
 sneaking and turning do not, and neither does Space (so you can walk to a door
-and open it on arrival).
+and open it on arrival). This applies to following a road as well: a movement
+key ends the whole route, not just the current stretch.
 
 ---
 

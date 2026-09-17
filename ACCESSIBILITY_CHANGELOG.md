@@ -4,6 +4,43 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-17
+
+- **You can now follow a road, not just find one (experimental).** This one is
+  new and we would like to know what you make of it: it works, but whether it is
+  the *right* shape for the job is still an open question, so it may change
+  substantially or be replaced in a later release. Finding roads in the scanner
+  is not experimental; only following them. Select a road in the
+  scanner's Terrain category and press **Activate** (Space). It asks which way
+  you want to go, and tells you where each way actually goes — *"North: 318
+  metres, ends in open country, northeast overall. South: 141 metres, ends at
+  Balmora."* — and the arrow keys are compass directions: Up north, Down south,
+  Left west, Right east. Nothing moves until you choose, because a road has two
+  ends and only you know which one you want. The whole route is walked before
+  you're asked, so the description is measured rather than guessed: you get the
+  distance, the place it ends at (or *"open country"* when it ends nowhere
+  nameable), a warning when the road bends so far that its overall direction
+  isn't the way it sets off, and *"loops back here"* when it curves round to
+  where you started. This matters because roads out of a town often bend
+  straight back into it. It then walks you onto the road and keeps going along
+  it, confirming the destination: *"Walking to the road, then following it north,
+  to Caldera."* Balmora's road runs for well over a kilometre, so roughly every 150
+  metres you'll hear how far you've come and which way you're now heading — a
+  road bends, so that can change. Note the difference between the two keys:
+  Shift + Enter walks you to a road and stops, Space walks the road itself. It
+  stops by itself when the road runs out, and won't circle forever if the road
+  loops back on itself. Anything that stops a normal auto-walk stops this too: a
+  movement key, combat, a hazard, or getting stuck, each reported as usual. At a
+  junction it keeps going as straight as the road allows rather than stopping to
+  ask, because most of Morrowind's junctions are just a road that's two or three
+  tiles wide — but that does mean at a real fork it takes the straighter branch,
+  so if that's not where you wanted to go, stop and pick the other road from the
+  scanner. Requested by Ohylli.
+- **Auto-walking to a road now puts you on it.** Walking to a road could leave
+  you standing a few metres to one side of it — the same problem levitation
+  shafts used to have, where you'd end up at the rim instead of in the column.
+  Roads now use the same exact-arrival rule, so you finish on the road surface.
+
 ## 2026-09-15
 
 - **Roads can now be found with the scanner.** People give directions by

@@ -338,6 +338,69 @@ because a road has no inherent forward. Where a stretch genuinely has no single
 direction — a crossroads, or a paved area in front of a building — you'll simply
 hear *"Road"* rather than a made-up heading.
 
+#### Following a road (experimental)
+
+> **This one is experimental.** It works, but it's a new idea and we're not yet
+> sure it's the *right* idea — following a road may turn out to be less useful
+> in practice than it sounds, or the way it asks you which way to go may need
+> rethinking. It may change substantially, or be replaced by something better,
+> in a later release. Finding roads in the scanner (above) is not experimental.
+> Please say what you think of it.
+
+Finding a road is only half of it — you usually want to *travel* it. Press
+**Activate** (Space) on a road in the scanner and you'll be asked which way —
+and told where each way actually goes:
+
+> *"North: 318 metres, ends in open country, northeast overall. South: 141
+> metres, ends at Balmora. Press an arrow key to choose."*
+
+The arrow keys are compass directions here: **Up** is north, **Down** south,
+**Left** west, **Right** east. Press one and it takes whichever end of the road
+best matches. **Nothing moves until you choose** — the road has two ends and
+only you know which one you want. Any other key cancels, and the question
+lapses on its own after a few seconds.
+
+That description is not a guess: the whole route is walked before you're asked,
+using the same rule the walk itself follows. Three things in it are worth
+knowing:
+
+- **Where it ends** — a named place if the road finishes at or beside one, or
+  plainly *"ends in open country"* if it doesn't. Only about half of routes end
+  somewhere nameable, so this is honest rather than optimistic.
+- **"X overall"** appears when the road bends so much that its general direction
+  isn't the way it sets off. A road leaving north can finish up south of you.
+- **"loops back here"** means the road curves round and returns you roughly to
+  where you started.
+
+This matters more than it sounds. Roads out of a town often bend straight back
+into it, so *"south: 141 metres, ends at Balmora"* tells you not to bother —
+whereas the old prompt would only have said the road ran north and south, and
+you'd have found out by walking it.
+
+Once you've chosen, it walks you onto the road (if you aren't already on it) and
+then keeps going along it, confirming the plan and the destination:
+
+> *"Walking to the road, then following it north, to Caldera."*
+
+This can be a very long walk — Balmora's road runs for well over a kilometre —
+so roughly every 150 metres you'll hear how far you've come and which way you're
+now heading (*"210 metres along the road, north."*). A road bends, so that
+second part can change as you go.
+
+Note the difference between the two keys: **Shift + Enter** walks you to the
+road and stops there, like any other scanner target. **Space** walks the road.
+
+At a junction it keeps going as straight as the road allows, without stopping to
+ask. Most of Morrowind's "junctions" are simply a road two or three tiles wide,
+so stopping at each one would mean stopping constantly. This does mean that at a
+genuine fork it takes the straighter branch rather than consulting you — if that
+isn't where you wanted to go, stop and pick the other road from the scanner.
+
+It stops by itself when the road runs out (*"The road ends here."*), and if the
+road loops back on itself it stops rather than circling forever. Everything that
+stops a normal auto-walk stops this too: any movement key, combat, a hazard, or
+getting stuck — and it reports why in the usual way.
+
 This reads the same road surfaces the game's own landscape uses, so it covers
 every region's roads, and mods that paint their roads the usual way are picked up
 without any extra work. Two limits worth knowing: this is an outdoor feature, so

@@ -2,6 +2,7 @@
 #define GAME_MWACCESSIBILITY_ROADS_H
 
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -137,9 +138,89 @@ namespace MWAccessibility
     // Which tile a world-XY position falls in.
     RoadTile roadTileAt(const osg::Vec2f& worldPos);
 
+    // Pick the next tile when FOLLOWING a road, given where we are and which way
+    // we are already going.
+    //
+    // \a candidates are the road tiles adjacent to \a from (any subset of the 8
+    // neighbours); \a heading is the direction of travel so far, as a world-XY
+    // vector, and need not be normalised.
+    //
+    // Chooses the candidate whose bearing from \a from is closest to \a heading --
+    // i.e. keep going as straight as the road allows. This is what "follow the
+    // road" means literally, and it is the only rule that behaves sanely on
+    // Morrowind's actual road data, where 46% of road tiles have four or more road
+    // neighbours: most "junctions" are just a road two or three tiles wide, so a
+    // policy that stopped or asked at every branching tile would stop constantly.
+    // Going straightest carries you along the road you are on and through the wide
+    // patches without comment.
+    //
+    // Candidates more than 90 degrees off the heading are REJECTED, so the walk can
+    // never double back on itself and oscillate between two tiles -- at a dead end
+    // it returns nothing and the caller stops honestly. Returns false when there is
+    // no acceptable next tile.
+    bool chooseStraightestStep(
+        const std::vector<RoadTile>& candidates, const RoadTile& from, const osg::Vec2f& heading, RoadTile& out);
+
     // --- Engine-facing ------------------------------------------------------
-    // Everything above is pure and unit-tested. The one function below reads the
-    // live ESM store, so it can only be exercised in game.
+    // Everything above is pure and unit-tested. The functions below read the live
+    // ESM store, so they can only be exercised in game.
+
+    // True if \a tile is a road tile, reading the land record for whichever cell
+    // contains it.
+    //
+    // Works for cells that are NOT currently loaded: ESM::Land::loadData restores a
+    // saved file context and reads on demand, caching the result. That is what lets
+    // a road be followed across the province rather than only within the 3x3 cell
+    // grid the engine keeps active -- Balmora's road stretch alone is 840 tiles
+    // spanning roughly 970 by 1390 metres across nine cells by twelve.
+    bool isRoadTileAt(const RoadTile& tile);
+
+    // The road tiles adjacent to \a tile (of the 8 neighbours).
+    std::vector<RoadTile> roadNeighboursOf(const RoadTile& tile);
+
+    // Where following a road from \a from in \a heading would actually END UP.
+    //
+    // The local axis a road runs along says nothing about where it GOES: a road
+    // leaving Balmora "northwest" bends round and returns to Balmora, so the
+    // player who picks northwest to reach Caldera is sent home instead. Walking
+    // the whole route up front is what makes the choice informed, and it is cheap
+    // -- the same straightest-step rule the follower uses, over data already
+    // memoised by Land::loadData, at roughly 0.02 ms per route.
+    struct RoadPreview
+    {
+        // The last tile of the route.
+        RoadTile mEnd;
+        // Tiles stepped through (1 means the road goes nowhere from here).
+        std::size_t mSteps = 0;
+        // Distance ALONG the road, in world units -- what the player will walk,
+        // not the straight line to the end.
+        float mLength = 0.0f;
+        // Net direction from start to end. Deliberately NOT the heading chosen:
+        // when a road doubles back these disagree, and that disagreement is
+        // exactly what the player needs to hear.
+        osg::Vec2f mNetBearing;
+        // True when the route ends within kLoopBackTiles of where it began, i.e.
+        // the road loops back on itself.
+        bool mLoopsBack = false;
+    };
+
+    // How close the end must be to the start to count as looping back. Two tiles
+    // (~14 m): far enough not to trip on a road that merely curves, close enough
+    // that "you end up where you started" is honest.
+    constexpr std::int32_t kLoopBackTiles = 2;
+
+    // Pre-walk the route. \a maxSteps bounds the walk; routes are short in
+    // practice (mean ~10 tiles, 90th percentile 26) but a province-spanning road
+    // needs a ceiling.
+    //
+    // \a neighbours supplies the adjacent road tiles. It is injected purely so the
+    // walk can be tested against hand-built roads: the engine-backed default reads
+    // land data and needs a live world, which would put this logic beyond the
+    // reach of unit tests -- and route-shape bugs (loops, doubling back) are
+    // exactly what tests catch and play-testing does not.
+    using RoadNeighbourFn = std::function<std::vector<RoadTile>(const RoadTile&)>;
+    RoadPreview previewRoad(const RoadTile& from, const osg::Vec2f& heading, std::size_t maxSteps = 600,
+        const RoadNeighbourFn& neighbours = {});
 
     // Find the road stretches near \a player, nearest-first.
     //

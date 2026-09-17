@@ -23,6 +23,7 @@
 #include "hazard.hpp"
 #include "hud.hpp"
 #include "proximitycue.hpp"
+#include "roads.hpp"
 #include "verticalshaft.hpp"
 
 namespace ESM
@@ -523,6 +524,20 @@ namespace MWAccessibility
             // which for a shaft is its rim (the open interior is never on the
             // mesh); see AutoWalker::start's exactArrival parameter.
             bool mExactArrival = false;
+            // True when this waypoint is a stretch of ROAD, which can be
+            // FOLLOWED (Activate) as well as walked to (Shift + Enter). A flag
+            // rather than a name comparison: the spoken name carries the road's
+            // direction and is localised prose, so matching on it would break
+            // the moment the wording changed.
+            bool mIsRoad = false;
+            // For a road, the axis that was SPOKEN in mName, carried through so
+            // that following it offers exactly the two directions the player was
+            // told about. Recomputing it at follow time is how the announcement
+            // and the prompt came to disagree ("southeast to northwest" vs "east
+            // and west"): the same fit over a different sample of tiles gives a
+            // different answer, so there must be ONE computation, not two.
+            // Zero when the road had no honest direction to speak.
+            osg::Vec2f mRoadAxis;
         };
 
         // --- Position-based category helpers -----------------------------
@@ -877,6 +892,85 @@ namespace MWAccessibility
 
         AutoWalker mAutoWalker;
         ProximityCue mProximityCue;
+
+        // --- Road following ---------------------------------------------
+        // Walking a road is a CHAIN of ordinary auto-walks rather than one long
+        // route: the navmesh only exists for the loaded 3x3 cell grid, so no
+        // single path can span the ~1.4 km of road out of Balmora. We hand the
+        // auto-walker one road tile at a time and, each time it arrives, pick
+        // the next tile and start again -- which means every safety behaviour
+        // (fall-arrest, hazard warnings, stuck detection, cancel on a movement
+        // key) applies to each leg exactly as it does to a normal walk, with no
+        // parallel implementation to keep in step.
+        //
+        // The route is NOT precomputed. Tiles are sampled from the land records
+        // as we go (roadNeighboursOf), so following works across the whole
+        // province without holding a route in memory or caring which cells are
+        // loaded.
+        bool mFollowingRoad = false;
+        // The tile we are currently walking to.
+        RoadTile mRoadTile{};
+        // Direction of travel, used to keep going straightest at a junction.
+        osg::Vec2f mRoadHeading;
+        // Tiles already walked this run, so a loop of road cannot trap us in a
+        // cycle: the straightest-step rule alone can circle a ring road forever.
+        std::set<std::pair<std::int32_t, std::int32_t>> mRoadVisited;
+        // Distance walked ALONG the road so far, accumulated per leg, and the
+        // value at the last progress callout. Measured along the road rather
+        // than as the crow flies so a curving or looping road reports what the
+        // player actually walked.
+        float mRoadTravelled = 0.0f;
+        float mRoadDistance = 0.0f;
+        // Where the current leg began, to accumulate mRoadTravelled.
+        osg::Vec3f mRoadLegStart;
+
+        // --- Choosing which way to follow a road -------------------------
+        // A road has two ends and the player must say which one they want. The
+        // first version of this feature guessed -- it took the direction the
+        // player happened to be approaching from -- which meant walking north to
+        // reach a north-south road silently committed you to going north. The
+        // player never chose, and on a road you were already standing on the
+        // choice was arbitrary. So Activate now ASKS.
+        //
+        // While this is set, the four arrow keys mean compass directions (up =
+        // north, right = east, and so on) and pick whichever end of the road
+        // they best match. Any other key cancels the prompt, and it lapses on
+        // its own after kRoadPromptTimeout so it can never silently swallow a
+        // later keystroke.
+        bool mAwaitingRoadDirection = false;
+        float mRoadPromptTime = 0.0f;
+        // The tile the player chose, and the road's two opposite directions from
+        // it. mRoadChoiceA is the one named first in the prompt.
+        RoadTile mRoadChoiceTile{};
+        osg::Vec2f mRoadChoiceA;
+        osg::Vec2f mRoadChoiceB;
+        // The pre-walked route for the direction actually chosen, so the
+        // confirmation and the arrival announcement describe the SAME route the
+        // prompt offered. Recomputing it would risk them disagreeing.
+        MWAccessibility::RoadPreview mRoadPreview;
+
+        // Ask which way to follow the selected road. Returns false (saying
+        // nothing) when the selection isn't a road we can follow.
+        bool promptForRoadDirection();
+        // One spoken option in that prompt: which way, how far, and where it ends.
+        std::string describeRoadOption(const osg::Vec2f& heading, const RoadPreview& preview) const;
+        // The name of the place at or beside \a tile, or empty for open country.
+        // Region names don't count -- they are not destinations.
+        std::string placeNameNearTile(const RoadTile& tile) const;
+        // Handle an arrow key while the prompt is up. Returns true if the key
+        // was consumed.
+        bool handleRoadDirectionKey(int scancode);
+        // Tick the prompt's timeout.
+        void updateRoadPrompt(float dt);
+
+        // Begin following the road in \a heading, walking to \a tile first if the
+        // player isn't standing on it yet.
+        bool startFollowingRoad(const RoadTile& tile, const osg::Vec2f& heading);
+        // Advance the chain when the current leg finishes; stop when the road
+        // runs out or the auto-walker gave up.
+        void updateRoadFollowing();
+        // Stop following, with a spoken reason.
+        void stopFollowingRoad(const std::string& reason);
 
         // Whether the audio beacon is currently enabled. Off by default.
         bool mBeaconEnabled = false;

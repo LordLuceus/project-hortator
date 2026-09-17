@@ -552,6 +552,13 @@ namespace MWAccessibility
         mTarget = target;
         mHasPtrTarget = true;
         mExactArrival = false; // object targets always accept the snapped proxy
+        // Clear the arrival latch and any silent-arrival request from the
+        // previous walk. Done at START, deliberately NOT in resetProgress():
+        // cancel() calls resetProgress(), and arrival calls cancel(), so
+        // clearing it there wiped the very flag arrival had just set -- a
+        // chained road walk then saw "did not arrive" and stopped after one leg.
+        mArrivedCleanly = false;
+        mSilentArrival = false;
         mTargetName = std::string(target.getClass().getName(target));
         mActive = true;
         resetProgress();
@@ -583,6 +590,9 @@ namespace MWAccessibility
         mTargetPos = target;
         mHasPtrTarget = false;
         mExactArrival = exactArrival;
+        // See the Ptr overload: cleared at start, not in resetProgress().
+        mArrivedCleanly = false;
+        mSilentArrival = false;
         mTargetName = name;
         mActive = true;
         resetProgress();
@@ -1798,7 +1808,11 @@ namespace MWAccessibility
 
         if (arrived)
         {
-            speakQueued("Arrived at " + mTargetName + ".");
+            // Latch BEFORE cancel(): the flag is how a chaining caller (road
+            // following) tells a finished leg from a walk the player stopped.
+            mArrivedCleanly = true;
+            if (!mSilentArrival)
+                speakQueued("Arrived at " + mTargetName + ".");
             cancel();
             return;
         }
@@ -2721,7 +2735,13 @@ namespace MWAccessibility
             }
             if (reachOk)
             {
-                speakQueued("Arrived at " + mTargetName + ".");
+                // The SECOND arrival site (the route ran short but we are close
+                // enough anyway). It must latch and honour silent arrival exactly
+                // like the primary one, or a chained road leg that finishes here
+                // would both announce itself and silently end the whole route.
+                mArrivedCleanly = true;
+                if (!mSilentArrival)
+                    speakQueued("Arrived at " + mTargetName + ".");
                 cancel();
                 return;
             }

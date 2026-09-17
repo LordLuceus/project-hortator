@@ -73,6 +73,50 @@ namespace MWAccessibility
                 return a.mY < b.mY;
             }
         };
+
+        // Is the texture index \a vtex (as stored in a land record, 1-based) a road,
+        // resolved against the plugin that supplied the record?
+        //
+        // Resolving per-plugin is what keeps this correct under load order: the
+        // index is plugin-local, so reading it against the wrong plugin would turn
+        // roads into sand (or vice versa) as soon as a mod adds land textures.
+        // Memoised across the whole session because the mapping cannot change while
+        // the game runs, and both the cell scan and road-following hammer it.
+        bool isRoadTextureIndex(const MWWorld::Store<ESM::LandTexture>& textureStore, std::uint16_t vtex, int plugin)
+        {
+            // 0 means "the default base texture", which is never a road and must not
+            // be passed to the store (the stored index is 1-based).
+            if (vtex == 0)
+                return false;
+
+            static std::map<std::pair<std::uint16_t, int>, bool> cache;
+            const auto key = std::make_pair(vtex, plugin);
+            const auto it = cache.find(key);
+            if (it != cache.end())
+                return it->second;
+
+            const std::string* name = textureStore.search(vtex - 1, plugin);
+            const bool road = name != nullptr && isRoadTexture(*name);
+            cache.emplace(key, road);
+            return road;
+        }
+
+        // The land record covering a tile, plus the tile's offset within it.
+        // Returns nullptr when that cell has no land data (interiors, sea, the edge
+        // of the world).
+        const ESM::Land* landForTile(const RoadTile& tile, unsigned& tx, unsigned& ty)
+        {
+            constexpr int kGrid = static_cast<int>(ESM::Land::LAND_TEXTURE_SIZE);
+            // Floor-divide: tile -17 belongs to cell -2, not cell -1, and getting
+            // this wrong would offset every road west or south of the origin.
+            const int cx = static_cast<int>(std::floor(static_cast<float>(tile.mX) / kGrid));
+            const int cy = static_cast<int>(std::floor(static_cast<float>(tile.mY) / kGrid));
+            tx = static_cast<unsigned>(tile.mX - cx * kGrid);
+            ty = static_cast<unsigned>(tile.mY - cy * kGrid);
+
+            const MWWorld::ESMStore& store = *MWBase::Environment::get().getESMStore();
+            return store.get<ESM::Land>().search(cx, cy);
+        }
     }
 
     bool isRoadTexture(std::string_view textureName)
@@ -268,6 +312,42 @@ namespace MWAccessibility
         return std::string(a) + " to " + b;
     }
 
+    bool chooseStraightestStep(
+        const std::vector<RoadTile>& candidates, const RoadTile& from, const osg::Vec2f& heading, RoadTile& out)
+    {
+        if (candidates.empty() || heading.length2() <= 0.f)
+            return false;
+
+        osg::Vec2f dir = heading;
+        dir.normalize();
+
+        bool found = false;
+        float bestDot = 0.f;
+        for (const RoadTile& c : candidates)
+        {
+            if (c == from)
+                continue;
+            osg::Vec2f step(static_cast<float>(c.mX - from.mX), static_cast<float>(c.mY - from.mY));
+            if (step.length2() <= 0.f)
+                continue;
+            step.normalize();
+            // dot > 0 keeps only candidates within 90 degrees of the heading.
+            // Without this the walk could choose the tile it just came from and
+            // shuttle back and forth forever; a dead end must instead report "no
+            // next tile" so the caller can stop and say so.
+            const float dot = step * dir;
+            if (dot <= 0.f)
+                continue;
+            if (!found || dot > bestDot)
+            {
+                found = true;
+                bestDot = dot;
+                out = c;
+            }
+        }
+        return found;
+    }
+
     osg::Vec2f roadTileCentre(const RoadTile& tile)
     {
         return osg::Vec2f((static_cast<float>(tile.mX) + 0.5f) * kRoadTileSize,
@@ -278,6 +358,91 @@ namespace MWAccessibility
     {
         return RoadTile{ static_cast<std::int32_t>(std::floor(worldPos.x() / kRoadTileSize)),
             static_cast<std::int32_t>(std::floor(worldPos.y() / kRoadTileSize)) };
+    }
+
+    bool isRoadTileAt(const RoadTile& tile)
+    {
+        unsigned tx = 0;
+        unsigned ty = 0;
+        const ESM::Land* land = landForTile(tile, tx, ty);
+        if (!land)
+            return false;
+        const ESM::Land::LandData* data = land->getLandData(ESM::Land::DATA_VTEX);
+        if (!data)
+            return false;
+
+        const MWWorld::ESMStore& store = *MWBase::Environment::get().getESMStore();
+        const std::uint16_t vtex = data->mTextures[ty * ESM::Land::LAND_TEXTURE_SIZE + tx];
+        return isRoadTextureIndex(store.get<ESM::LandTexture>(), vtex, land->getPlugin());
+    }
+
+    std::vector<RoadTile> roadNeighboursOf(const RoadTile& tile)
+    {
+        std::vector<RoadTile> out;
+        for (std::int32_t dx = -1; dx <= 1; ++dx)
+        {
+            for (std::int32_t dy = -1; dy <= 1; ++dy)
+            {
+                if (dx == 0 && dy == 0)
+                    continue;
+                const RoadTile nb{ tile.mX + dx, tile.mY + dy };
+                if (isRoadTileAt(nb))
+                    out.push_back(nb);
+            }
+        }
+        return out;
+    }
+
+    RoadPreview previewRoad(const RoadTile& from, const osg::Vec2f& heading, std::size_t maxSteps,
+        const RoadNeighbourFn& neighbours)
+    {
+        const RoadNeighbourFn& nbFn = neighbours ? neighbours : RoadNeighbourFn(&roadNeighboursOf);
+        RoadPreview out;
+        out.mEnd = from;
+        out.mSteps = 1;
+
+        // Walk the SAME rule the follower uses, so the preview cannot promise a
+        // route the walk won't take. Sharing the step function is the point: two
+        // implementations would drift, and the player would hear a destination
+        // that never arrives.
+        RoadTile cur = from;
+        osg::Vec2f hd = heading;
+        std::set<std::pair<std::int32_t, std::int32_t>> visited{ { cur.mX, cur.mY } };
+        std::int32_t tileSteps = 0;
+
+        while (out.mSteps < maxSteps)
+        {
+            std::vector<RoadTile> candidates;
+            for (const RoadTile& nb : nbFn(cur))
+            {
+                if (visited.count({ nb.mX, nb.mY }) == 0)
+                    candidates.push_back(nb);
+            }
+
+            RoadTile next{};
+            if (!chooseStraightestStep(candidates, cur, hd, next))
+                break;
+
+            hd = osg::Vec2f(static_cast<float>(next.mX - cur.mX), static_cast<float>(next.mY - cur.mY));
+            out.mLength += hd.length() * kRoadTileSize;
+            hd.normalize();
+            cur = next;
+            visited.insert({ cur.mX, cur.mY });
+            ++out.mSteps;
+            ++tileSteps;
+        }
+
+        out.mEnd = cur;
+        out.mNetBearing
+            = osg::Vec2f(static_cast<float>(cur.mX - from.mX), static_cast<float>(cur.mY - from.mY));
+        // A route that goes somewhere but returns to within a couple of tiles of
+        // its start has looped. Require some actual travel first, or a two-tile
+        // stub would report itself as a loop.
+        out.mLoopsBack = tileSteps >= 4 && std::abs(cur.mX - from.mX) <= kLoopBackTiles
+            && std::abs(cur.mY - from.mY) <= kLoopBackTiles;
+        if (out.mNetBearing.length2() > 0.f)
+            out.mNetBearing.normalize();
+        return out;
     }
 
     std::vector<RoadStretch> collectNearbyRoads(const MWWorld::Ptr& player)
@@ -310,10 +475,6 @@ namespace MWAccessibility
         const int playerCellX = static_cast<int>(std::floor(playerPos.x() / Constants::CellSizeInUnits));
         const int playerCellY = static_cast<int>(std::floor(playerPos.y() / Constants::CellSizeInUnits));
 
-        // One texture index resolves to one name; cache the verdict so a cell of
-        // 256 tiles costs a handful of string comparisons rather than 256.
-        std::map<std::pair<std::uint16_t, int>, bool> roadVerdict;
-
         std::vector<RoadTile> tiles;
         for (int cx = playerCellX - kCellRadius; cx <= playerCellX + kCellRadius; ++cx)
         {
@@ -334,23 +495,7 @@ namespace MWAccessibility
                         // mTextures is row-major by the time we see it: ESM::Land's
                         // loader has already undone the file's 4x4-of-4x4 swizzle.
                         const std::uint16_t vtex = data->mTextures[ty * ESM::Land::LAND_TEXTURE_SIZE + tx];
-                        // 0 means "the default base texture", which is never a road
-                        // and must not be fed to the store (the index is 1-based).
-                        if (vtex == 0)
-                            continue;
-
-                        const auto key = std::make_pair(vtex, plugin);
-                        auto cached = roadVerdict.find(key);
-                        if (cached == roadVerdict.end())
-                        {
-                            // The vtex index is per-plugin, so resolve it against the
-                            // plugin that supplied this land record -- that is what
-                            // makes a mod's own road textures work, and what stops a
-                            // load-order shift from turning roads into sand.
-                            const std::string* name = textureStore.search(vtex - 1, plugin);
-                            cached = roadVerdict.emplace(key, name && isRoadTexture(*name)).first;
-                        }
-                        if (!cached->second)
+                        if (!isRoadTextureIndex(textureStore, vtex, plugin))
                             continue;
 
                         tiles.push_back(RoadTile{ cx * static_cast<int>(ESM::Land::LAND_TEXTURE_SIZE)
