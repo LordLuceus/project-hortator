@@ -19,6 +19,7 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
   faction rank requires. Values are read fresh each time you land on them, so a
   number is never a stale one left over from earlier. If you do not use any such
   mod, nothing changes.
+
 ## 2026-09-17
 
 - **You can now follow a road, not just find one (experimental).** This one is

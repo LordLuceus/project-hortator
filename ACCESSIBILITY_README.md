@@ -27,9 +27,9 @@ see **Reporting problems** at the bottom.
    supports SAPI, Windows Narrator (OneCore), and JAWS.
 
 Everything the mod says is also sent to a **braille display** if you use one, on
-screen readers that support it (NVDA and JAWS). There is nothing to turn on. Note
-that this has not been tested on real hardware — if you use a display and
-something reads oddly, please report it.
+screen readers that support it (NVDA and JAWS). There is nothing to turn on. This
+has been confirmed working on a real display — if you use one and something reads
+oddly, please report it.
 
 ---
 
