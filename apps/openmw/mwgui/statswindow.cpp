@@ -37,6 +37,8 @@
 #include <components/esm3/loadmgef.hpp>
 #include <components/esm3/loadskil.hpp>
 
+#include "../mwaccessibility/luastatsreader.hpp"
+
 #include "accessibility/panegroup.hpp"
 #include "accessibility/spelltext.hpp"
 #include "tooltips.hpp"
@@ -376,6 +378,24 @@ namespace MWGui
     {
         NoDrop::onFrame(dt);
 
+        // When a Lua mod has taken this window over (Stats Window Extender
+        // calls registerWindow('Stats')), this window never opens, so its own
+        // accessibility pane never enrols and the character sheet disappears
+        // from the Tab cycle entirely. Stand in for it by reading the mod's
+        // published model instead. This window still ticks while disabled,
+        // which is what makes the substitution possible.
+        if (isDisabledByLua())
+        {
+            if (MWBase::Environment::get().getWindowManager()->getMode() == GM_Inventory)
+                mLuaStatsPane.onFrame(dt);
+            else if (mLuaStatsPane.enrolled())
+                mLuaStatsPane.close();
+            return;
+        }
+
+        if (mLuaStatsPane.enrolled())
+            mLuaStatsPane.close();
+
         MWWorld::Ptr player = MWMechanics::getPlayer();
         const MWMechanics::NpcStats& playerStats = player.getClass().getNpcStats(player);
         const auto& store = MWBase::Environment::get().getESMStore();
@@ -478,6 +498,24 @@ namespace MWGui
     {
         A11y::PaneGroup::instance().withdraw(&mA11y);
         mA11y.deactivate();
+    }
+
+    void StatsWindow::setVisible(bool visible)
+    {
+        // A Lua-disabled window is forced invisible, so setVisible() takes
+        // neither the onOpen() nor the onClose() branch: those hooks never run
+        // for it. This override is therefore the only place the stand-in pane
+        // can learn that the menu opened or closed.
+        //
+        // Without it the pane was never withdrawn, stayed "active" across the
+        // close (so reopening announced nothing at all), never dropped its
+        // cached structure (so changes to the mod's own settings only appeared
+        // after a save reload), and never let the group forget which pane the
+        // user was last on.
+        if (isDisabledByLua() && !visible)
+            mLuaStatsPane.close();
+
+        WindowPinnableBase::setVisible(visible);
     }
 
     void StatsWindow::setFactions(const FactionList& factions)

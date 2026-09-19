@@ -126,6 +126,14 @@ right movement keys to cancel.
 can find the way by ear, useful when auto-walk can't reach somewhere and you need
 to navigate the last stretch yourself.
 
+**Mods that replace a window.** A few mods rebuild one of the game's own windows
+from scratch rather than adding to it. The character sheet is the common case:
+Stats Window Extender replaces it, and several other mods (Dignitas among them)
+are built on top of that one. Where the original window is replaced, the screen
+reader reads the *replacement*, including any extra lines the mod adds, so the
+Stats pane keeps working and stays in the Tab cycle. You do not need to
+configure anything, and if you use no such mod nothing changes.
+
 ---
 
 ## Key bindings

@@ -4,6 +4,21 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-19
+
+- **Mods that replace the character sheet are now readable.** Some popular mods
+  rebuild the Stats window completely -- Stats Window Extender, and everything
+  built on top of it such as Dignitas. Until now the replacement was silent: the
+  mod switches the original window off, and the screen reader had nothing left to
+  read, so the Stats pane simply vanished from the Tab cycle. It is back, and it
+  now reads the mod's own character sheet rather than the original one. Your
+  name, level, attributes, skills, factions and reputation are all there,
+  grouped the way the mod groups them, with **Enter** to open a group and
+  **Left** or **Escape** to come back out. Press **T** for the detail a sighted
+  player gets from hovering a line, such as what a skill does or what the next
+  faction rank requires. Values are read fresh each time you land on them, so a
+  number is never a stale one left over from earlier. If you do not use any such
+  mod, nothing changes.
 ## 2026-09-17
 
 - **You can now follow a road, not just find one (experimental).** This one is

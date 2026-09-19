@@ -4,6 +4,7 @@
 #include "statswatcher.hpp"
 #include "windowpinnablebase.hpp"
 
+#include "accessibility/luastatspane.hpp"
 #include "accessibility/screen.hpp"
 
 #include <components/esm/attr.hpp>
@@ -52,6 +53,13 @@ namespace MWGui
 
         void onOpen() override;
         void onClose() override;
+
+        // A window a Lua mod has disabled is never made visible, so neither
+        // onOpen() nor onClose() ever fires for it (WindowBase::setVisible
+        // takes neither branch). That leaves the stand-in accessibility pane
+        // with no lifecycle hook at all, so it is driven from here instead --
+        // this IS still called on a disabled window.
+        void setVisible(bool visible) override;
 
         std::string_view getWindowIdForLua() const override { return "Stats"; }
 
@@ -102,6 +110,9 @@ namespace MWGui
         // read straight from the player's stats each time they are spoken.
         A11y::Screen mA11y;
         MyGUI::Widget* mA11yAnchor = nullptr;
+        // Stands in for this window's pane when a Lua mod has replaced the
+        // stats window and disabled it (see LuaStatsPane). Inert otherwise.
+        A11y::LuaStatsPane mLuaStatsPane;
         // (Re)build the option list from the current character.
         void buildAccessibility();
         // Submenu item builders (Attributes / Skills are expandable lists).

@@ -24,6 +24,7 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/markremap.cpp
     mwaccessibility/hazard.cpp
     mwaccessibility/roads.cpp
+    mwaccessibility/luastatsspeech.cpp
 
     mwscript/testscripts.cpp
 )
