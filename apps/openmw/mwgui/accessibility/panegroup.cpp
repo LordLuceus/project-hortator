@@ -96,6 +96,47 @@ namespace MWGui::A11y
         mLastActiveOrder = mPanes[target].order;
     }
 
+    void PaneGroup::claimInitial(Screen* screen)
+    {
+        const std::size_t index = indexOf(screen);
+        if (index == npos)
+            return;
+
+        // A modal owns input; leave it alone, exactly as maybeActivateInitial
+        // does.
+        if (MyGUI::InputManager::getInstance().isModalAny())
+            return;
+
+        // Only the lowest-order pane may claim focus this way, and only on a
+        // fresh open.
+        //
+        // Deliberately does NOT consult mLastActiveOrder, unlike
+        // maybeActivateInitial. That memory was written moments ago by whichever
+        // pane took focus while we were still absent -- on a first open,
+        // Inventory activates and records ITS order before we have even
+        // enrolled. Honouring it here would always pick that pane and return,
+        // which is precisely the bug this function exists to fix.
+        if (mPanes.front().screen != screen)
+            return;
+
+        if (screen->isActive())
+            return;
+
+        const std::size_t target = 0;
+
+        // Suspend whichever pane claimed focus before we existed, so its
+        // anchor releases real key focus and its key delegate is unbound --
+        // otherwise two panes would both believe they hold input.
+        for (const Pane& pane : mPanes)
+        {
+            if (pane.screen != screen && pane.screen->isActive())
+                pane.screen->suspend();
+        }
+
+        screen->activate();
+        mLastActiveOrder = mPanes[target].order;
+    }
+
     bool PaneGroup::cycle(int delta)
     {
         if (mPanes.size() < 2 || delta == 0)

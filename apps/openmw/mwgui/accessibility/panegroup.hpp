@@ -55,6 +55,20 @@ namespace MWGui::A11y
         /// fully exited (not merely hidden behind a sub-mode).
         void resetMemory() { mLastActiveOrder = -1; }
 
+        /// Hand initial focus to \p screen even though another pane has already
+        /// taken it this frame, suspending that pane first.
+        ///
+        /// For a pane that cannot enrol before the others have run: a pane
+        /// standing in for a window a Lua mod has disabled can only enrol from
+        /// onFrame, by which point a lower-priority pane has already claimed
+        /// focus and maybeActivateInitial will not act. This happens on every
+        /// open, not just the first: the panes re-enrol from scratch each time
+        /// the menu is shown. Without it the user lands on the wrong pane.
+        ///
+        /// Does nothing if \p screen is not the pane that should hold initial
+        /// focus, or if it already does.
+        void claimInitial(Screen* screen);
+
         /// Tab (\p delta = +1) / Shift+Tab (\p delta = -1): suspend the active
         /// pane and resume the next/previous one, wrapping around. Announces the
         /// target pane's name then its current option. No-op (returns false)
