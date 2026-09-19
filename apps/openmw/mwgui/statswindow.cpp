@@ -374,6 +374,29 @@ namespace MWGui
         updateSkillArea();
     }
 
+    bool StatsWindow::inLuaStatsMode() const
+    {
+        MWBase::WindowManager* wm = MWBase::Environment::get().getWindowManager();
+
+        // The character sheet lives in the inventory mode.
+        if (wm->getMode() != GM_Inventory)
+            return false;
+
+        // But so does every window a Lua mod opens: openmw's Lua API exposes
+        // GM_Inventory under the generic name "Interface", and a mod showing an
+        // unrelated dialog does I.UI.setMode('Interface', { windows = {} }) --
+        // which puts us in GM_Inventory with every built-in window suppressed.
+        // Lua Multimark's Greater Recall dialog does exactly this.
+        //
+        // Our own window is disabled either way (replaced, or hidden by that
+        // mode), so being disabled cannot tell the two apart. The sibling
+        // windows can: in a real character-sheet open they are shown alongside
+        // us, whereas a mod that asked for no windows has suppressed them all.
+        // If none of them is up, the stats pane does not belong on screen and
+        // must not take focus from whatever the other mod is showing.
+        return wm->isWindowVisible("Inventory") || wm->isWindowVisible("Magic") || wm->isWindowVisible("Map");
+    }
+
     void StatsWindow::onFrame(float dt)
     {
         NoDrop::onFrame(dt);
@@ -386,7 +409,7 @@ namespace MWGui
         // which is what makes the substitution possible.
         if (isDisabledByLua())
         {
-            if (MWBase::Environment::get().getWindowManager()->getMode() == GM_Inventory)
+            if (inLuaStatsMode())
                 mLuaStatsPane.onFrame(dt);
             else if (mLuaStatsPane.enrolled())
                 mLuaStatsPane.close();

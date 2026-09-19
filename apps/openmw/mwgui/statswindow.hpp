@@ -54,6 +54,11 @@ namespace MWGui
         void onOpen() override;
         void onClose() override;
 
+        /// True when the stand-in accessibility pane should be present: we are
+        /// in the inventory mode AND it is a real character-sheet open, rather
+        /// than a Lua mod borrowing the same mode to show its own dialog.
+        bool inLuaStatsMode() const;
+
         // A window a Lua mod has disabled is never made visible, so neither
         // onOpen() nor onClose() ever fires for it (WindowBase::setVisible
         // takes neither branch). That leaves the stand-in accessibility pane
