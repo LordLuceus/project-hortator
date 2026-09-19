@@ -78,6 +78,13 @@ namespace MWGui
         virtual std::string_view getWindowIdForLua() const { return {}; }
         void setDisabledByLua(bool disabled) { mDisabledByLua = disabled; }
 
+        /// True when a Lua mod has taken this window over via I.UI.registerWindow
+        /// (which calls ui._setWindowDisabled). Such a window never becomes
+        /// visible, so onOpen() never runs -- accessibility code that would
+        /// normally hook onOpen has to notice the takeover and narrate the
+        /// replacement instead. See MWGui::A11y::LuaStatsPane.
+        bool isDisabledByLua() const { return mDisabledByLua; }
+
         static void clampWindowCoordinates(MyGUI::Window* window);
 
         virtual ControllerButtons* getControllerButtons() { return &mControllerButtons; }

@@ -125,6 +125,31 @@ namespace MWLua
             return std::nullopt;
         }
 
+        // As callPlayerInterface, but for an interface function returning a
+        // TABLE: the visitor converts the result to plain C++ data while the
+        // Lua state is still safely borrowed. Used to read another mod's UI
+        // model for the screen reader (see MWGui::A11y::LuaStatsReader).
+        template <typename T, typename Visitor, typename... Args>
+        static std::optional<T> visitPlayerInterface(std::string_view interfaceName, std::string_view identifier,
+            const Visitor& visitor, const Args&... args)
+        {
+            auto player = MWMechanics::getPlayer();
+            auto scripts = player.getRefData().getLuaScripts();
+            if (scripts)
+                return scripts->visitInterfaceResult<T>(interfaceName, identifier, visitor, args...);
+
+            return std::nullopt;
+        }
+
+        // True when the player's scripts publish the named interface, i.e. the
+        // mod providing it is installed and loaded.
+        static bool playerHasInterface(std::string_view interfaceName)
+        {
+            auto player = MWMechanics::getPlayer();
+            auto scripts = player.getRefData().getLuaScripts();
+            return scripts && scripts->hasInterface(interfaceName);
+        }
+
     protected:
         SelfObject mData;
 

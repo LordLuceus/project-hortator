@@ -225,6 +225,49 @@ namespace LuaUtil
             return res;
         }
 
+        // Call a function on an interface and convert its result inside the
+        // protected call.
+        //
+        // Unlike callInterface, this suits a function returning a TABLE: the
+        // visitor runs while the Lua state is still safely borrowed, so it can
+        // walk the table and copy out plain C++ data. Letting a sol::table
+        // escape instead would leave the caller holding a reference into a
+        // state it does not own, which may be collected or mutated by the time
+        // it is read.
+        template <typename T, typename Visitor, typename... Args>
+        std::optional<T> visitInterfaceResult(std::string_view interfaceName, std::string_view identifier,
+            const Visitor& visitor, const Args&... args)
+        {
+            std::optional<T> res = std::nullopt;
+            mLua.protectedCall([&](LuaUtil::LuaView& view) {
+                LoadedData& data = ensureLoaded();
+                auto interface = data.mPublicInterfaces.get<sol::optional<sol::table>>(interfaceName);
+                if (interface)
+                {
+                    auto o = interface->get_or<sol::object>(identifier, sol::nil);
+                    if (o.is<sol::function>())
+                    {
+                        sol::object luaRes = o.as<sol::function>().call(args...);
+                        res = visitor(luaRes);
+                    }
+                }
+            });
+
+            return res;
+        }
+
+        // True when a script in this container publishes the named interface.
+        // Lets a caller detect that a mod is present without calling into it.
+        bool hasInterface(std::string_view interfaceName)
+        {
+            bool found = false;
+            mLua.protectedCall([&](LuaUtil::LuaView& view) {
+                LoadedData& data = ensureLoaded();
+                found = data.mPublicInterfaces.get<sol::optional<sol::table>>(interfaceName).has_value();
+            });
+            return found;
+        }
+
         struct Handler
         {
             int mScriptId;
