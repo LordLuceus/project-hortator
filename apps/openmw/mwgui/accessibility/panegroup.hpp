@@ -53,7 +53,11 @@ namespace MWGui::A11y
         /// Forget the remembered last-active pane so the next fresh open lands on
         /// the lowest-order pane again. Call when the multi-pane GUI mode is
         /// fully exited (not merely hidden behind a sub-mode).
-        void resetMemory() { mLastActiveOrder = -1; }
+        void resetMemory()
+        {
+            mLastActiveOrder = -1;
+            mUserChosePane = false;
+        }
 
         /// Hand initial focus to \p screen even though another pane has already
         /// taken it this frame, suspending that pane first.
@@ -106,6 +110,12 @@ namespace MWGui::A11y
         // returns the user to the same pane instead of resetting to the first.
         // -1 means "no memory" -> land on the lowest-order pane.
         int mLastActiveOrder = -1;
+
+        // True once the player has picked a pane with Tab in this menu session.
+        // Distinct from mLastActiveOrder, which is also written when a pane
+        // auto-activates on open; only this one means a deliberate choice, so
+        // only this one can stop a late-enrolling pane from claiming focus.
+        bool mUserChosePane = false;
     };
 }
 

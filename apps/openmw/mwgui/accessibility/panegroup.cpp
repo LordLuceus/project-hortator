@@ -107,16 +107,20 @@ namespace MWGui::A11y
         if (MyGUI::InputManager::getInstance().isModalAny())
             return;
 
-        // Only the lowest-order pane may claim focus this way, and only on a
-        // fresh open.
-        //
-        // Deliberately does NOT consult mLastActiveOrder, unlike
-        // maybeActivateInitial. That memory was written moments ago by whichever
-        // pane took focus while we were still absent -- on a first open,
-        // Inventory activates and records ITS order before we have even
-        // enrolled. Honouring it here would always pick that pane and return,
-        // which is precisely the bug this function exists to fix.
+        // Only the lowest-order pane may claim focus this way.
         if (mPanes.front().screen != screen)
+            return;
+
+        // And only before the player has chosen a pane for themselves. Escaping
+        // out of a book returns to the inventory mode and re-enrols this pane,
+        // and without this check we would seize focus from whichever pane the
+        // player was actually on when they opened the book.
+        //
+        // mLastActiveOrder cannot answer this: maybeActivateInitial writes it
+        // when a pane auto-activates, so it is already set on a genuine first
+        // open, which is the case this function exists to serve. Only an
+        // explicit Tab counts as the player choosing.
+        if (mUserChosePane)
             return;
 
         if (screen->isActive())
@@ -164,6 +168,10 @@ namespace MWGui::A11y
         mPanes[active].screen->suspend();
         mPanes[next].screen->resume();
         mLastActiveOrder = mPanes[next].order;
+
+        // The player has now picked a pane deliberately, so a pane that enrols
+        // late must not take focus off it (see claimInitial).
+        mUserChosePane = true;
 
         // Announce the pane we landed on, then its current option (resume()
         // re-announces the option; prefix the pane name so the user knows the
