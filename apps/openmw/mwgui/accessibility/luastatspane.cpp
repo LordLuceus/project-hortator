@@ -1,6 +1,7 @@
 #include "luastatspane.hpp"
 
 #include <MyGUI_Gui.h>
+#include <MyGUI_InputManager.h>
 
 #include "../../mwbase/environment.hpp"
 #include "../../mwbase/windowmanager.hpp"
@@ -206,6 +207,10 @@ namespace MWGui::A11y
                 mA11y.setVirtualFocus(mAnchor);
             }
 
+            // close() hides it so it cannot hold key focus while we are out of
+            // the Tab cycle; MyGUI will not focus a widget that is not visible.
+            mAnchor->setVisible(true);
+
             rebuild();
 
             // Stand in for the vanilla stats window: same pane name and the
@@ -282,6 +287,26 @@ namespace MWGui::A11y
         mA11y.clear();
         mEnrolled = false;
 
+        // Hide the anchor, and drop key focus if it still holds it.
+        //
+        // Every other pane's anchor is a child of its own window, so hiding the
+        // window hides the anchor and MyGUI releases key focus for free. Ours
+        // cannot be: the host window is disabled by Lua and never becomes
+        // visible, so a child of it could never receive a keystroke, and the
+        // anchor has to live at the GUI root instead.
+        //
+        // That means nothing hides it for us. Left visible and focused after the
+        // menu closes, it swallowed keys for the rest of the session: the
+        // scanner's search prompt could not take input and movement keys passed
+        // straight through, once the stats pane had been opened even once.
+        if (mAnchor)
+        {
+            if (MyGUI::InputManager::getInstance().getKeyFocusWidget() == mAnchor)
+                MWBase::Environment::get().getWindowManager()->setKeyFocusWidget(nullptr);
+
+            mAnchor->setVisible(false);
+        }
+
         // If the inventory mode is gone for good (not merely hidden behind a
         // sub-mode such as reading a book), let the group forget which pane
         // was active so the next fresh open lands on the first pane and
@@ -294,8 +319,7 @@ namespace MWGui::A11y
         mSignature.clear();
         mSinceCheck = 0.f;
 
-        // The anchor is deliberately kept: it belongs to the host window, is
-        // invisible and inert, and recreating it on every open would leak a
-        // widget per cycle.
+        // The anchor widget itself is deliberately kept (merely hidden above):
+        // recreating it on every open would leak a widget per cycle.
     }
 }
