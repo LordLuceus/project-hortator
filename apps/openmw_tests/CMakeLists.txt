@@ -25,6 +25,7 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/hazard.cpp
     mwaccessibility/roads.cpp
     mwaccessibility/luastatsspeech.cpp
+    mwaccessibility/statdamage.cpp
 
     mwscript/testscripts.cpp
 )

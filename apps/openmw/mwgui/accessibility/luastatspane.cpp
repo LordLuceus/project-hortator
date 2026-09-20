@@ -7,11 +7,14 @@
 #include "../../mwbase/windowmanager.hpp"
 
 #include "../../mwmechanics/actorutil.hpp"
+#include "../../mwmechanics/npcstats.hpp"
 
 #include "../../mwworld/class.hpp"
+#include "../../mwworld/esmstore.hpp"
 
 #include "../../mwaccessibility/luastatsreader.hpp"
 #include "../../mwaccessibility/luastatsspeech.hpp"
+#include "../../mwaccessibility/statdamage.hpp"
 
 #include "element.hpp"
 #include "panegroup.hpp"
@@ -41,6 +44,13 @@ namespace MWGui::A11y
             { "levelStats", "sLevel", "Level" },
             { "attributes", "sAttributes", "Attributes" },
         };
+
+        std::string damageSuffix(const std::string& lineId)
+        {
+            const MWWorld::Ptr player = MWMechanics::getPlayer();
+            return MWAccessibility::luaStatDamageSuffix(
+                lineId, *MWBase::Environment::get().getESMStore(), player.getClass().getNpcStats(player));
+        }
     }
 
     std::string LuaStatsPane::labelForSection(const std::string& sectionId)
@@ -148,15 +158,22 @@ namespace MWGui::A11y
                     // rather than a value function) lost everything but their
                     // name.
                     const std::optional<std::string> live = MWAccessibility::LuaStatsReader::readLineValue(row.mId);
-                    item.label = (live && !live->empty()) ? MWAccessibility::joinLabelValue(row.mLabel, *live)
-                                                         : row.mText;
+                    item.label
+                        = (live && !live->empty()) ? MWAccessibility::joinLabelValue(row.mLabel, *live) : row.mText;
+                    item.label += damageSuffix(row.mId);
                     item.section = row.mSection;
                     item.tooltips = [id = row.mId, captured = row.mTooltips]() -> std::vector<std::string> {
                         // Resolved on demand: the mod's tooltip builders are
                         // arbitrary code, and running one per row per rebuild
                         // would cost far more than the few the user asks for.
                         std::vector<std::string> lines = MWAccessibility::LuaStatsReader::readLineTooltip(id);
-                        return lines.empty() ? captured : lines;
+                        if (lines.empty())
+                            lines = captured;
+                        // Match vanilla's detail readout as well as the row.
+                        // Re-evaluate on demand so Restore removes the warning.
+                        if (!lines.empty())
+                            lines.front() += damageSuffix(id);
+                        return lines;
                     };
                     items.push_back(std::move(item));
                 }
@@ -217,8 +234,7 @@ namespace MWGui::A11y
             // same position in the Tab cycle, so the character sheet is where
             // the player expects regardless of which mod is providing it.
             PaneGroup::instance().enrol(&mA11y,
-                std::string(MWBase::Environment::get().getWindowManager()->getGameSettingString("sStats", "Stats")),
-                0);
+                std::string(MWBase::Environment::get().getWindowManager()->getGameSettingString("sStats", "Stats")), 0);
             mEnrolled = true;
 
             // Take the initial focus away from whichever pane grabbed it while

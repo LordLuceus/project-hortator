@@ -38,38 +38,11 @@
 #include <components/esm3/loadskil.hpp>
 
 #include "../mwaccessibility/luastatsreader.hpp"
+#include "../mwaccessibility/statdamage.hpp"
 
 #include "accessibility/panegroup.hpp"
 #include "accessibility/spelltext.hpp"
 #include "tooltips.hpp"
-
-namespace
-{
-    // True when a stat carries PERMANENT damage (Damage Attribute / Damage
-    // Skill -- e.g. a bonewalker's curse) that no temporary active effect
-    // accounts for. Sighted players see this as a red stat number in the stats
-    // window; there is no entry for it in the active-effects list (unlike Drain,
-    // which is temporary and IS listed), so without this a screen-reader user
-    // has no way to know a stat has been permanently lowered.
-    //
-    // Damage, Drain and Absorb all increment the same underlying mDamage
-    // counter on the stat. Drain and Absorb are temporary and reverse
-    // themselves when the effect ends, and while active they appear in the
-    // magic-effects magnitudes (and the active-effects list). So we subtract the
-    // live Drain + Absorb magnitudes from mDamage to isolate the permanent,
-    // otherwise-invisible portion.
-    bool statPermanentlyDamaged(const MWWorld::Ptr& player, float damage, const ESM::RefId& drainEffect,
-        const ESM::RefId& absorbEffect, const ESM::RefId& arg)
-    {
-        if (damage <= 0.f)
-            return false;
-        const auto& effects = player.getClass().getCreatureStats(player).getMagicEffects();
-        const float drain = effects.getOrDefault(MWMechanics::EffectKey(drainEffect, arg)).getMagnitude();
-        const float absorb = effects.getOrDefault(MWMechanics::EffectKey(absorbEffect, arg)).getMagnitude();
-        // Guard against float rounding: only report clearly-positive residue.
-        return damage - drain - absorb > 0.5f;
-    }
-}
 
 namespace MWGui
 {
@@ -901,9 +874,8 @@ namespace MWGui
             // Flag permanent Damage Attribute (e.g. a bonewalker's curse), which
             // -- unlike temporary Drain -- has no active-effects entry to reveal
             // it. Mirrors the red stat number a sighted player sees.
-            const bool damaged = statPermanentlyDamaged(player, attr.getDamage(), ESM::MagicEffect::DrainAttribute,
-                ESM::MagicEffect::AbsorbAttribute, attribute.mId);
-            const std::string suffix = damaged ? ", damaged" : std::string();
+            const std::string suffix = MWAccessibility::statDamageSuffix(attr.getDamage(), stats.getMagicEffects(),
+                ESM::MagicEffect::DrainAttribute, ESM::MagicEffect::AbsorbAttribute, attribute.mId);
             A11y::SubItem item;
             item.label = name + " " + MyGUI::utility::toString(value) + suffix;
             item.tooltips = [name, description, value, suffix] {
@@ -937,9 +909,10 @@ namespace MWGui
             const ESM::RefId governingId = ESM::Attribute::indexToRefId(skill->mData.mAttribute);
 
             // Flag permanent Damage Skill (no active-effects entry, unlike Drain).
-            const bool damaged = statPermanentlyDamaged(
-                MWMechanics::getPlayer(), damage, ESM::MagicEffect::DrainSkill, ESM::MagicEffect::AbsorbSkill, skillId);
-            const std::string suffix = damaged ? ", damaged" : std::string();
+            const MWWorld::Ptr player = MWMechanics::getPlayer();
+            const std::string suffix = MWAccessibility::statDamageSuffix(damage,
+                player.getClass().getCreatureStats(player).getMagicEffects(), ESM::MagicEffect::DrainSkill,
+                ESM::MagicEffect::AbsorbSkill, skillId);
 
             // Progress toward the next skill-up, mirroring the SkillToolTip a
             // sighted player hovers (statswindow SkillToolTip layout): a
@@ -952,7 +925,6 @@ namespace MWGui
             int progressPercent = 0;
             if (!maxed)
             {
-                MWWorld::Ptr player = MWMechanics::getPlayer();
                 const float requirement = player.getClass().getNpcStats(player).getSkillProgressRequirement(
                     skillId, *MWBase::Environment::get().getESMStore()->get<ESM::Class>().find(
                         player.get<ESM::NPC>()->mBase->mClass));

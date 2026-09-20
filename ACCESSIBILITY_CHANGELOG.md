@@ -4,6 +4,15 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-20
+
+- **Damaged attributes and skills are now announced in replacement character
+  sheets too.** Stats Window Extender and mods built on it now say "damaged"
+  when an attribute or skill needs Restore magic, just like the original Stats
+  window. The warning is included when reading the row and its details.
+  Temporary Drain and Absorb effects are not flagged, and Fortify does not hide
+  permanent damage that still needs restoring.
+
 ## 2026-09-19
 
 - **Mods that replace the character sheet are now readable.** Some popular mods
