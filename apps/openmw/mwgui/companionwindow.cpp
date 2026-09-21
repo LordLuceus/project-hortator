@@ -225,8 +225,8 @@ namespace MWGui
         // Each item stack is a widget-less option (the ItemView draws them, so
         // there's no per-item widget to focus). Label = name + count; the T-key
         // tooltip carries the on-screen detail (weight / value / effects). Enter
-        // takes the whole stack into the player's inventory; Shift+Enter opens
-        // the accessible count picker for a partial amount.
+        // opens the accessible count picker for a stack; Shift+Enter takes the
+        // whole stack into the player's inventory directly.
         if (mSortModel)
         {
             for (size_t i = 0; i < mSortModel->getItemCount(); ++i)
@@ -242,7 +242,7 @@ namespace MWGui
                     .tooltips = [base = item.mBase, count = item.mCount]
                     { return A11y::itemTooltipLines(base, static_cast<int>(count)); },
                     .activate = [this, index]
-                    { a11yTakeItem(index, !MyGUI::InputManager::getInstance().isShiftPressed()); } });
+                    { a11yTakeItem(index, MyGUI::InputManager::getInstance().isShiftPressed()); } });
             }
         }
 

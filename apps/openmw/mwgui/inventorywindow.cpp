@@ -541,7 +541,8 @@ namespace MWGui
         // In barter mode, Enter sells (borrows the item to the merchant)
         // instead of equipping. onItemSelectedFromSourceModel runs the same
         // trade path the mouse uses: it validates the item is sellable and
-        // opens the accessible count picker for a stack, otherwise sells one.
+        // opens the count picker for a stack unless Shift requests the whole
+        // stack (a single item needs no picker).
         // Don't use the equip-follow mechanism here: borrowing fires no
         // onInventoryUpdate, so the spoken list is instead rebuilt off the trade
         // signature in onFrame (which also catches the deferred count-dialog
@@ -555,12 +556,12 @@ namespace MWGui
         // Next to an open container/companion, Enter stores the item ACROSS
         // rather than equipping it -- the natural counterpart to the take action
         // on the other pane, so both directions share one key with the same
-        // convention: plain Enter moves the whole stack; Shift+Enter opens the
-        // count picker for a partial amount. (a11yStoreItem applies its own
+        // convention: plain Enter opens the count picker for a stack;
+        // Shift+Enter moves the whole stack. (a11yStoreItem applies its own
         // bound-item + mode guards.)
         if (mGuiMode == GM_Container || mGuiMode == GM_Companion)
         {
-            a11yStoreItem(sortIndex, /*wholeStack=*/!MyGUI::InputManager::getInstance().isShiftPressed());
+            a11yStoreItem(sortIndex, /*wholeStack=*/MyGUI::InputManager::getInstance().isShiftPressed());
             return;
         }
 

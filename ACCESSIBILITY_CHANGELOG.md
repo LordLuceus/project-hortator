@@ -6,11 +6,16 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-21
 
+- **Item transfers now use Enter for the count picker and Shift+Enter for the
+  whole stack everywhere.** Taking from containers or companions and storing
+  items into either now match buying and selling. Previously those transfers
+  used the opposite modifier order from barter. Single items still move
+  immediately; equipping and using items in your normal inventory is unchanged.
+
 - **Delete no longer opens a drop-count picker while using a container,
   companion or merchant.** Dropping items is only available in your normal
   inventory. Previously you could choose an amount in those other windows,
-  but nothing would be dropped. Taking and storing items with Enter or
-  Shift+Enter is unchanged.
+  but nothing would be dropped.
 
 ## 2026-09-20
 
@@ -1375,6 +1380,8 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
   loot too (replacing the old separate "store" key), so taking and storing share
   one key in both directions. Press E at any time to hear the companion's carry
   weight, and their profit if they are a contract companion.
+  **Update, 2026-09-21:** the modifier order is now reversed: Enter opens the
+  picker and Shift+Enter transfers the whole stack, matching barter.
 
 ## 2026-06-11
 

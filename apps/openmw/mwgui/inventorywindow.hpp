@@ -189,10 +189,10 @@ namespace MWGui
         // the count picker first for a partial drop. \p drop selects the
         // drop-into-world action instead of equip/use.
         void a11yActivateItem(int sortIndex, bool drop);
-        // Store the currently-selected item into the open container (the S key)
+        // Store the currently-selected item into the open container/companion
         // -- the screen-reader equivalent of Alt+clicking it across. No-op
-        // outside GM_Container. Opens the count picker for a stack unless
-        // \p wholeStack (Shift+S). Mirrors a11yActivateItem's flow.
+        // outside GM_Container/GM_Companion. Enter opens the picker for a stack;
+        // Shift+Enter passes \p wholeStack to move it all directly.
         void a11yStoreItem(int sortIndex, bool wholeStack);
         // Count-picker OK callback for an a11y-initiated partial store.
         void onA11yCountStored(MyGUI::Widget* sender, std::size_t count);

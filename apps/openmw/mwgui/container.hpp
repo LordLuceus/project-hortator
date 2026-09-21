@@ -90,7 +90,7 @@ namespace MWGui
         // \p wholeStack, else open the (accessible) count picker. Rebuilds the
         // a11y list afterwards and keeps the cursor near the same row.
         void a11yTakeItem(int sortIndex, bool wholeStack);
-        // CountDialog OK callback for a partial take (Shift+Enter path).
+        // CountDialog OK callback for a partial take (plain Enter path).
         void onA11yCountTaken(MyGUI::Widget* sender, std::size_t count);
         // Rebuild the a11y item list after the model changed, pinning the
         // cursor to the same row (clamped) or the buttons if the list emptied.

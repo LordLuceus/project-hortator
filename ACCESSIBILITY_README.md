@@ -150,6 +150,12 @@ current target. (Home re-reads the target specifically — it is not a general
 "repeat the last thing you heard", so it won't bring back a time-of-day readout
 or a hazard warning.)
 
+For item transfers, **Enter** asks how many to move when there is a stack, and
+**Shift + Enter** moves the whole stack without asking. This works in both
+directions with containers and companions, and when buying, selling or returning
+items from a barter offer. A single item moves immediately. Equipping and using
+items in your normal inventory is unchanged.
+
 The keys below are in addition to OpenMW's normal controls. The accessibility
 keys use keys that Morrowind itself leaves free (the number row with Ctrl, Page
 Up/Down, the arrow keys with Ctrl, etc.), so they don't clash with movement or

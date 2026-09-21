@@ -62,9 +62,9 @@ auto-walk, location announcements, and audio beacon (gameplay, not a screen).
 - [x] **Store items into containers** (`GM_Container`) — the loot window and the
       player's inventory are now enrolled as a two-pane PaneGroup (container = 0,
       inventory = 1), so Tab/Shift+Tab switch between taking and storing, just
-      like barter. In the inventory pane, **S** stores the selected item into the
-      open container (count picker for a stack; Shift+S = whole stack) via the
-      existing `transferItem`/`ItemTransfer::apply` path. `a11yStoreItem` +
+      like barter. In the inventory pane, **Enter** stores the selected item into
+      the open container/companion (count picker for a stack; Shift+Enter = whole
+      stack) via the existing `transferItem`/`ItemTransfer::apply` path. `a11yStoreItem` +
       `onA11yCountStored` mirror the drop flow (unequip-if-needed, then follow the
       item). Closes the take/drop/store gap (could take + drop, not store).
 - [x] **Companion** (`GM_Companion`) — share/transfer items. Companion window has

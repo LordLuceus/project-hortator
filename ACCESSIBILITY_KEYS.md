@@ -221,8 +221,8 @@ scroll the topic list after every answer to notice that a lead has appeared.
 | Key | Action |
 | --- | --- |
 | **Up / Down** | Move through the items |
-| **Enter** | Take, store, equip or use the focused item — whole stack |
-| **Shift + Enter** | The same, but ask how many first. Applies when moving items to or from an open container or companion; bartering always asks, and equipping from your own inventory always takes the whole stack |
+| **Enter** | Take or store the focused item; asks how many for a stack. In your normal inventory, equip or use the item instead |
+| **Shift + Enter** | Take or store the whole stack without asking. Works in both directions with containers and companions, and when buying or selling. Equipping and using items in your normal inventory is unchanged |
 | **T** | Cycle the item's details (weight, value, condition, effects) |
 | **Ctrl + Left / Right** | Cycle the category filter: All, Weapon, Apparel, Magic, Misc |
 | **Delete** | Drop the focused item in your normal inventory (asks how many for a stack). Disabled while using a container, companion or merchant. Bound and conjured items can't be dropped |
@@ -240,7 +240,8 @@ These work on both sides of a barter — your inventory and the merchant's.
 
 | Key | Action |
 | --- | --- |
-| **Enter** | Add the focused item to the deal |
+| **Enter** | Add the focused item to the deal, or return an item already on offer; asks how many for a stack |
+| **Shift + Enter** | Add or return the whole stack without asking |
 | **B** | Announce the running balance — what you'd pay, or what you'd receive |
 | **G** | Announce your gold |
 | **Shift + G** | Announce the merchant's gold |
