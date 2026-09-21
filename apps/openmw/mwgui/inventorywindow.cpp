@@ -497,6 +497,10 @@ namespace MWGui
 
     void InventoryWindow::a11yActivateItem(int sortIndex, bool drop)
     {
+        // Match dropItem's mode guard before opening a count picker or
+        // changing selection/follow state. Transfers and barter cannot drop.
+        if (drop && mGuiMode != GM_Inventory)
+            return;
         if (!mSortModel || mTradeModel == nullptr)
             return;
         if (sortIndex < 0 || sortIndex >= static_cast<int>(mSortModel->getItemCount()))

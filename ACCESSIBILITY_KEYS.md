@@ -225,7 +225,7 @@ scroll the topic list after every answer to notice that a lead has appeared.
 | **Shift + Enter** | The same, but ask how many first. Applies when moving items to or from an open container or companion; bartering always asks, and equipping from your own inventory always takes the whole stack |
 | **T** | Cycle the item's details (weight, value, condition, effects) |
 | **Ctrl + Left / Right** | Cycle the category filter: All, Weapon, Apparel, Magic, Misc |
-| **Delete** | Drop the focused item (asks how many for a stack). Bound and conjured items can't be dropped |
+| **Delete** | Drop the focused item in your normal inventory (asks how many for a stack). Disabled while using a container, companion or merchant. Bound and conjured items can't be dropped |
 | **E** | Announce your encumbrance and armour rating |
 | **Tab / Shift + Tab** | Switch between your inventory and the container, companion or merchant |
 
@@ -457,7 +457,7 @@ Most keys do one job everywhere. These don't, so they're worth knowing:
 | Key | Depends where you are |
 | --- | --- |
 | **T** | Journal, while reading: open the topics browser. **Everywhere else** (including the journal's own lists): read out extra detail for the focused thing |
-| **Delete** | Inventory: drop the item. Magic window: delete the spell. Save/Load: delete the save. While typing: delete a character |
+| **Delete** | Normal inventory only: drop the item (not while using a container, companion or merchant). Magic window: delete the spell. Save/Load: delete the save. While typing: delete a character |
 | **Tab** | Settings: next tab. Journal lists: switch between Topics and Quests. Elsewhere: switch between side-by-side panes |
 | **E** | Your inventory: your encumbrance. A companion's: theirs. Alchemy: re-read the potion's effects |
 | **Ctrl + Left / Right** | Inventory: change category filter. Editing a spell effect: adjust a slider by 10. In the world: turn to the next compass point |

@@ -4,6 +4,14 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-21
+
+- **Delete no longer opens a drop-count picker while using a container,
+  companion or merchant.** Dropping items is only available in your normal
+  inventory. Previously you could choose an amount in those other windows,
+  but nothing would be dropped. Taking and storing items with Enter or
+  Shift+Enter is unchanged.
+
 ## 2026-09-20
 
 - **Damaged attributes and skills are now announced in replacement character
