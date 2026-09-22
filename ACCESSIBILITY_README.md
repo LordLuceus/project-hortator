@@ -162,6 +162,9 @@ own headings, such as Combat and Magic, rather than internal section IDs.
 Named sections and sections with stats of their own keep their grouping.
 The health, magicka and fatigue group is called **Vitals**, separate from
 Enumeratio's **Stats** counters.
+Keyboard navigation starts with your name, then follows the left column from
+top to bottom before moving through the right column. Within each column,
+sections follow the placement chosen by the extender and its dependent mods.
 Attributes and skills with permanent damage are announced as "damaged" in both
 the original and replacement character sheets, including their detail readouts.
 Temporary Drain and Absorb effects do not trigger that warning.

@@ -1,6 +1,7 @@
 #ifndef OPENMW_MWACCESSIBILITY_LUASTATSTREE_H
 #define OPENMW_MWACCESSIBILITY_LUASTATSTREE_H
 
+#include <cstddef>
 #include <string>
 #include <vector>
 
@@ -134,15 +135,18 @@ namespace MWAccessibility
         std::vector<LuaStatsSection> mSections;
 
         LuaPlacement mPlacement;
+
+        /// Originating pane, in reading order (0 = left, 1 = right).
+        /// Placement only compares boxes within the same pane.
+        std::size_t mPaneIndex = 0;
     };
 
     /// The whole window.
     ///
-    /// Boxes are held in a single list in pane order (left pane first, then
-    /// right). The mod returns its panes as a Lua MAP, whose iteration order is
-    /// arbitrary, so the reader must flatten it by explicit key rather than by
-    /// iterating -- otherwise the right pane's skills could precede the left
-    /// pane's health on some runs and not others.
+    /// Boxes retain their pane identity even though they share one list. The
+    /// reader visits the Lua pane map by explicit key (left, then right), and
+    /// the shaper applies placement separately within each pane. A right-pane
+    /// Top placement must never jump ahead of the left pane's health.
     struct LuaStatsTree
     {
         std::vector<LuaStatsBox> mBoxes;

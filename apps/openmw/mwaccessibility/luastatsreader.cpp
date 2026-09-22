@@ -1,5 +1,7 @@
 #include "luastatsreader.hpp"
 
+#include <iterator>
+
 #include <sol/sol.hpp>
 
 #include "../mwlua/localscripts.hpp"
@@ -253,9 +255,10 @@ namespace MWAccessibility
             return section;
         }
 
-        LuaStatsBox readBox(const sol::table& source)
+        LuaStatsBox readBox(const sol::table& source, std::size_t paneIndex)
         {
             LuaStatsBox box;
+            box.mPaneIndex = paneIndex;
             box.mId = readString(source, "id");
             box.mPlacement = readPlacement(source);
 
@@ -279,9 +282,9 @@ namespace MWAccessibility
                 return tree;
 
             const sol::table paneMap = panes.as<sol::table>();
-            for (const std::string_view paneId : sPaneOrder)
+            for (std::size_t paneIndex = 0; paneIndex < std::size(sPaneOrder); ++paneIndex)
             {
-                const sol::object pane = paneMap.get_or<sol::object>(paneId, sol::nil);
+                const sol::object pane = paneMap.get_or<sol::object>(sPaneOrder[paneIndex], sol::nil);
                 if (!pane.is<sol::table>())
                     continue;
 
@@ -289,7 +292,7 @@ namespace MWAccessibility
                 for (const auto& [key, value] : pane.as<sol::table>())
                 {
                     if (value.is<sol::table>())
-                        tree.mBoxes.push_back(readBox(value.as<sol::table>()));
+                        tree.mBoxes.push_back(readBox(value.as<sol::table>(), paneIndex));
                 }
             }
 

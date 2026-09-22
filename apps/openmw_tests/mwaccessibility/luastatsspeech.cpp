@@ -46,8 +46,8 @@ namespace
         return n;
     }
 
-    // The mod's real default layout, as observed from a running game: four
-    // boxes in the left pane and one in the right. Section ids and headers are
+    // Representative default sections: three boxes on the left and one on
+    // the right, with the mod's real box placements. Section ids and headers are
     // exactly what the interface reported, including the three sections the mod
     // declares with no header at all.
     LuaStatsTree defaultWindow()
@@ -69,6 +69,13 @@ namespace
                 { section("majorSkills", "Major Skills", { line("acrobatics", "Acrobatics", "32") }),
                     section("minorSkills", "Minor Skills", { line("speechcraft", "Speechcraft", "21") }) }),
         };
+        tree.mBoxes[0].mPlacement.mType = LuaPlacementType::Top;
+        tree.mBoxes[1].mPlacement.mType = LuaPlacementType::After;
+        tree.mBoxes[1].mPlacement.mTarget = "healthStatsBox";
+        tree.mBoxes[2].mPlacement.mType = LuaPlacementType::After;
+        tree.mBoxes[2].mPlacement.mTarget = "levelStatsBox";
+        tree.mBoxes[3].mPaneIndex = 1;
+        tree.mBoxes[3].mPlacement.mType = LuaPlacementType::Top;
         return tree;
     }
 
@@ -151,6 +158,97 @@ namespace
         EXPECT_EQ(options[4].mId, "minorSkills");
     }
 
+    TEST(MWAccessibilityLuaStats, RightPanePriorityCannotCrossThePaneBoundary)
+    {
+        auto left = box("left", { section("leftGroup", "Left", { line("l", "Left row") }) });
+        auto right = box("right", { section("rightGroup", "Right", { line("r", "Right row") }) });
+        right.mPaneIndex = 1;
+        right.mPlacement.mPriority = 500;
+        LuaStatsTree tree;
+        tree.mBoxes = { left, right };
+        const auto options = buildOptions(tree);
+        ASSERT_EQ(options.size(), 2);
+        EXPECT_EQ(options[0].mId, "leftGroup");
+        EXPECT_EQ(options[1].mId, "rightGroup");
+    }
+
+    TEST(MWAccessibilityLuaStats, CrossPanePlacementTargetsAreMissingNotSiblings)
+    {
+        for (const auto type : { LuaPlacementType::Before, LuaPlacementType::After })
+        {
+            auto left = box("leftAnchor", { section("left", "Left", { line("l", "Left row") }) });
+            auto first = box("rightFirst", { section("first", "First", { line("f", "First row") }) });
+            first.mPaneIndex = 1;
+            auto misplaced = box("rightLast", { section("last", "Last", { line("x", "Last row") }) });
+            misplaced.mPaneIndex = 1;
+            misplaced.mPlacement.mType = type;
+            misplaced.mPlacement.mTarget = "leftAnchor";
+            LuaStatsTree tree;
+            tree.mBoxes = { left, first, misplaced };
+            const auto options = buildOptions(tree);
+            ASSERT_EQ(options.size(), 3);
+            EXPECT_EQ(options[0].mId, "left");
+            EXPECT_EQ(options[1].mId, "first");
+            EXPECT_EQ(options[2].mId, "last");
+        }
+    }
+
+    TEST(MWAccessibilityLuaStats, PaneIdentitySurvivesInterleavedSnapshotBoxes)
+    {
+        auto first = box("leftFirst", { section("first", "First", { line("f", "First row") }) });
+        auto second = box("leftSecond", { section("second", "Second", { line("s", "Second row") }) });
+        auto right = box("right", { section("right", "Right", { line("r", "Right row") }) });
+        right.mPaneIndex = 1;
+        LuaStatsTree tree;
+        tree.mBoxes = { right, first, second };
+        const auto options = buildOptions(tree);
+        ASSERT_EQ(options.size(), 3);
+        EXPECT_EQ(options[0].mId, "first");
+        EXPECT_EQ(options[1].mId, "second");
+        EXPECT_EQ(options[2].mId, "right");
+    }
+
+    TEST(MWAccessibilityLuaStats, MissingOrEmptyLeftPaneDoesNotCreateOptions)
+    {
+        auto right = box("right", { section("rightGroup", "Right", { line("r", "Right row") }) });
+        right.mPaneIndex = 1;
+        right.mPlacement.mType = LuaPlacementType::Top;
+        LuaStatsTree tree;
+        tree.mBoxes = { right };
+        auto options = buildOptions(tree);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "rightGroup");
+
+        auto hidden = section("hidden", "Hidden", { line("h", "Hidden row") });
+        hidden.mVisible = false;
+        tree.mBoxes.insert(tree.mBoxes.begin(), box("left", { hidden }));
+        options = buildOptions(tree);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "rightGroup");
+    }
+
+    TEST(MWAccessibilityLuaStats, PromotedGroupsStayInTheirPaneAndKeepSectionPlacement)
+    {
+        auto tree = defaultWindow();
+        auto root = section("SC_ROOT", "", {});
+        auto combat = section("SC_COMBAT", "Combat", { line("kills", "Kills", "2") });
+        auto magic = section("SC_MAGIC", "Magic", { line("casts", "Spells cast", "3") });
+        magic.mPlacement.mType = LuaPlacementType::Before;
+        magic.mPlacement.mTarget = "SC_COMBAT";
+        root.mSections = { combat, magic };
+        tree.mBoxes[3].mSections.push_back(root);
+
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 7);
+        EXPECT_EQ(options[0].mLabel, "Vitals");
+        EXPECT_EQ(options[1].mLabel, "Level");
+        EXPECT_EQ(options[2].mLabel, "Attributes");
+        EXPECT_EQ(options[3].mLabel, "Major Skills");
+        EXPECT_EQ(options[4].mLabel, "Minor Skills");
+        EXPECT_EQ(options[5].mLabel, "Magic");
+        EXPECT_EQ(options[6].mLabel, "Combat");
+    }
+
     TEST(MWAccessibilityLuaStats, AnUnheadedSectionIsNamedByTheLabeller)
     {
         // The mod declares healthStats / levelStats / attributes with an empty
@@ -197,6 +295,7 @@ namespace
         };
         LuaStatsTree tree;
         tree.mBoxes = { box("SC_LEFT_BOX", { left }), box("rightScrollBox", { right }) };
+        tree.mBoxes[1].mPaneIndex = 1;
         const auto options = buildOptions(tree, labelFor);
         const std::vector<std::string> names{ "Stats", "Primary Needs", "Interactions", "Combat", "Magic", "Crime",
             "Misc", "Insults" };
@@ -217,6 +316,8 @@ namespace
         auto root = section("SC_LEFT_ROOT", "", {});
         root.mSections = { section("SC_STATS", "Stats", { line("QUEST_COUNT", "Quests", "4") }) };
         tree.mBoxes.push_back(box("SC_LEFT_BOX", { root }));
+        tree.mBoxes.back().mPlacement.mType = LuaPlacementType::After;
+        tree.mBoxes.back().mPlacement.mTarget = "attributesBox";
 
         const auto options = buildOptions(tree, labelFor);
         ASSERT_EQ(options.size(), 6);
@@ -224,9 +325,9 @@ namespace
         EXPECT_EQ(options.front().mLabel, "Vitals");
         ASSERT_EQ(options.front().mChildren.size(), 3);
         EXPECT_EQ(options.front().mChildren[0].mId, "health");
-        EXPECT_EQ(options.back().mId, "SC_STATS");
-        EXPECT_EQ(options.back().mLabel, "Stats");
-        EXPECT_NE(options.front().mLabel, options.back().mLabel);
+        EXPECT_EQ(options[3].mId, "SC_STATS");
+        EXPECT_EQ(options[3].mLabel, "Stats");
+        EXPECT_NE(options.front().mLabel, options[3].mLabel);
     }
 
     TEST(MWAccessibilityLuaStats, AnonymousWrappersAreTransparentAtMultipleDepths)

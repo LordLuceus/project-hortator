@@ -1,6 +1,7 @@
 #include "luastatsspeech.hpp"
 
 #include <algorithm>
+#include <map>
 
 namespace MWAccessibility
 {
@@ -214,24 +215,33 @@ namespace MWAccessibility
     {
         std::vector<LuaStatsOption> options;
 
-        std::vector<std::string> boxIds;
-        std::vector<LuaPlacement> boxPlacements;
-        boxIds.reserve(tree.mBoxes.size());
-        boxPlacements.reserve(tree.mBoxes.size());
+        // createPane in the extender sorts each pane independently. Retain
+        // that boundary: Top/Before/After and priority have no meaning across
+        // columns. Pane indices impose left-before-right reading order.
+        std::map<std::size_t, std::vector<const LuaStatsBox*>> panes;
         for (const LuaStatsBox& box : tree.mBoxes)
-        {
-            boxIds.push_back(box.mId);
-            boxPlacements.push_back(box.mPlacement);
-        }
+            panes[box.mPaneIndex].push_back(&box);
 
         // Boxes are anonymous, so they never become options themselves: they
         // only decide the order their sections are read in.
-        for (const std::size_t boxIndex : orderByPlacement(boxIds, boxPlacements))
+        for (const auto& pane : panes)
         {
-            const LuaStatsBox& box = tree.mBoxes[boxIndex];
+            const auto& boxes = pane.second;
+            std::vector<std::string> boxIds;
+            std::vector<LuaPlacement> boxPlacements;
+            boxIds.reserve(boxes.size());
+            boxPlacements.reserve(boxes.size());
+            for (const LuaStatsBox* box : boxes)
+            {
+                boxIds.push_back(box->mId);
+                boxPlacements.push_back(box->mPlacement);
+            }
 
-            for (const LuaStatsSection* section : orderedSections(box.mSections))
-                appendOptions(*section, labeller, options);
+            for (const std::size_t boxIndex : orderByPlacement(boxIds, boxPlacements))
+            {
+                for (const LuaStatsSection* section : orderedSections(boxes[boxIndex]->mSections))
+                    appendOptions(*section, labeller, options);
+            }
         }
 
         return options;

@@ -6,6 +6,11 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-22
 
+- **Stats Window Extender navigation now follows the visual columns:** down
+  the left column, then down the right. Previously the right-hand groups could jump
+  ahead of Vitals, Level and Attributes. Sections still follow the extender's
+  and other mods' placement rules within each column; your name remains first.
+
 - **Extra character-sheet groups now use their real headings instead of
   internal names.** Mods such as Enumeratio put their groups inside unnamed
   containers, which previously appeared as sections like "SC_ROOT" and
