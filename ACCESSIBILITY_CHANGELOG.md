@@ -13,6 +13,8 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
   Combat and Magic — directly from the Stats pane. This applies to other
   Stats Window Extender mods too. Named sections and sections with stats of
   their own keep their existing grouping; hidden or empty groups stay hidden.
+  The original health, magicka and fatigue group is now called **Vitals**, so
+  it is distinct from Enumeratio's **Stats** counters.
 
 - **The opening cutscene now has spoken audio description.** Its written
   introduction and visual scenes are read by your screen reader at timed points

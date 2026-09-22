@@ -72,12 +72,12 @@ namespace
         return tree;
     }
 
-    // Stands in for the engine's GMST lookup, which names the sections the mod
+    // Stands in for the engine's localized labels, which name the sections the mod
     // leaves unheaded.
     std::string labelFor(const std::string& sectionId)
     {
         if (sectionId == "healthStats")
-            return "Stats";
+            return "Vitals";
         if (sectionId == "levelStats")
             return "Level";
         if (sectionId == "attributes")
@@ -106,7 +106,7 @@ namespace
         const std::vector<LuaStatsOption> options = buildOptions(defaultWindow(), labelFor);
 
         ASSERT_EQ(options.size(), 5);
-        EXPECT_EQ(options[0].mLabel, "Stats");
+        EXPECT_EQ(options[0].mLabel, "Vitals");
         EXPECT_EQ(options[1].mLabel, "Level");
         EXPECT_EQ(options[2].mLabel, "Attributes");
         EXPECT_EQ(options[3].mLabel, "Major Skills");
@@ -209,6 +209,24 @@ namespace
         }
         EXPECT_EQ(options[0].mId, "SC_STATS");
         EXPECT_EQ(options[0].mChildren[0].mText, "Quests 4");
+    }
+
+    TEST(MWAccessibilityLuaStats, EnumeratioStatsAndDefaultVitalsHaveDistinctNames)
+    {
+        auto tree = defaultWindow();
+        auto root = section("SC_LEFT_ROOT", "", {});
+        root.mSections = { section("SC_STATS", "Stats", { line("QUEST_COUNT", "Quests", "4") }) };
+        tree.mBoxes.push_back(box("SC_LEFT_BOX", { root }));
+
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 6);
+        EXPECT_EQ(options.front().mId, "healthStats");
+        EXPECT_EQ(options.front().mLabel, "Vitals");
+        ASSERT_EQ(options.front().mChildren.size(), 3);
+        EXPECT_EQ(options.front().mChildren[0].mId, "health");
+        EXPECT_EQ(options.back().mId, "SC_STATS");
+        EXPECT_EQ(options.back().mLabel, "Stats");
+        EXPECT_NE(options.front().mLabel, options.back().mLabel);
     }
 
     TEST(MWAccessibilityLuaStats, AnonymousWrappersAreTransparentAtMultipleDepths)

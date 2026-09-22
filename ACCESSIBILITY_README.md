@@ -160,6 +160,8 @@ Unnamed layout containers are skipped so that their named groups appear
 directly in the Stats pane. For example, Enumeratio's counters appear under its
 own headings, such as Combat and Magic, rather than internal section IDs.
 Named sections and sections with stats of their own keep their grouping.
+The health, magicka and fatigue group is called **Vitals**, separate from
+Enumeratio's **Stats** counters.
 Attributes and skills with permanent damage are announced as "damaged" in both
 the original and replacement character sheets, including their detail readouts.
 Temporary Drain and Absorb effects do not trigger that warning.

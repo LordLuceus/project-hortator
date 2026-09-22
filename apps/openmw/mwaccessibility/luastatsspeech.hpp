@@ -57,9 +57,9 @@ namespace MWAccessibility
     ///
     /// Used to name healthStats / levelStats / attributes, which the mod
     /// declares with no header, no l10n entry and no box title -- so no display
-    /// name for them exists anywhere in the mod. The engine supplies them from
-    /// the same GMSTs the vanilla window uses, so the wording and its
-    /// translation match the window the player already knows.
+    /// name for them exists anywhere in the mod. The engine supplies localized
+    /// labels: Vitals for health/magicka/fatigue, and vanilla GMSTs for Level
+    /// and Attributes.
     using LuaSectionLabeller = std::function<std::string(const std::string& sectionId)>;
 
     /// Reorder entries the way the mod draws them.

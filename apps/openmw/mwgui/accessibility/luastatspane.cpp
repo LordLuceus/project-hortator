@@ -26,9 +26,9 @@ namespace MWGui::A11y
         // Name the sections the mod declares with no header at all
         // (healthStats, levelStats, attributes). No display name for these
         // exists anywhere in the mod -- not as a header, an l10n entry, or a
-        // box title -- so the engine supplies one from the same GMSTs the
-        // vanilla stats window uses, which keeps both the wording and its
-        // translation identical to the window the player already knows.
+        // box title -- so the engine supplies localized labels. Level and
+        // Attributes reuse vanilla GMSTs; the combined health/magicka/fatigue
+        // group uses Vitals rather than the entire window's generic title.
         struct SectionLabel
         {
             std::string_view mSectionId;
@@ -37,9 +37,6 @@ namespace MWGui::A11y
         };
 
         constexpr SectionLabel sSectionLabels[] = {
-            // Holds health, magicka and fatigue together, so it cannot be named
-            // after any one of them; "Stats" is the vanilla window's own title.
-            { "healthStats", "sStats", "Stats" },
             // Holds level, race and class.
             { "levelStats", "sLevel", "Level" },
             { "attributes", "sAttributes", "Attributes" },
@@ -55,6 +52,9 @@ namespace MWGui::A11y
 
     std::string LuaStatsPane::labelForSection(const std::string& sectionId)
     {
+        if (sectionId == "healthStats")
+            return "#{Interface:Vitals}";
+
         for (const SectionLabel& entry : sSectionLabels)
         {
             if (sectionId == entry.mSectionId)
