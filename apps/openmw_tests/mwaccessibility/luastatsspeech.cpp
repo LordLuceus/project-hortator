@@ -99,11 +99,10 @@ namespace
         EXPECT_EQ(joinLabelValue("", ""), "");
     }
 
-    TEST(MWAccessibilityLuaStats, EverySectionBecomesOneSubmenu)
+    TEST(MWAccessibilityLuaStats, EveryDefaultSectionBecomesOneSubmenu)
     {
-        // The universal rule: no flat top-level rows and no exceptions, so the
-        // structure generalises to any dependent mod's sections. Boxes are
-        // anonymous and never appear.
+        // Data-bearing sections remain submenus, not flat top-level rows.
+        // Anonymous boxes and purely structural sections never appear.
         const std::vector<LuaStatsOption> options = buildOptions(defaultWindow(), labelFor);
 
         ASSERT_EQ(options.size(), 5);
@@ -178,6 +177,139 @@ namespace
 
         ASSERT_EQ(options.size(), 1);
         EXPECT_EQ(options[0].mLabel, "someModSection");
+    }
+
+    TEST(MWAccessibilityLuaStats, EnumeratioRootsExposeTheirActualGroups)
+    {
+        // Enumeratio's shipped layout with Stats on the left: the two roots
+        // have no headers or rows, only these explicitly named child groups.
+        auto left = section("SC_LEFT_ROOT", "", {});
+        left.mSections = { section("SC_STATS", "Stats", { line("QUEST_COUNT", "Quests", "4") }) };
+        auto right = section("SC_ROOT", "", {});
+        right.mSections = {
+            section("SC_NEEDS", "Primary Needs", { line("meals", "Meals", "2") }),
+            section("SC_INTERACT", "Interactions", { line("talks", "Conversations", "3") }),
+            section("SC_COMBAT", "Combat", { line("kills", "Kills", "5") }),
+            section("SC_MAGIC", "Magic", { line("casts", "Spells cast", "6") }),
+            section("SC_CRIME", "Crime", { line("bounty", "Highest bounty", "7") }),
+            section("SC_MISC", "Misc", { line("misc", "Counter", "8") }),
+            section("SC_INSULTS", "Insults", { line("insults", "Insults", "9") }),
+        };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("SC_LEFT_BOX", { left }), box("rightScrollBox", { right }) };
+        const auto options = buildOptions(tree, labelFor);
+        const std::vector<std::string> names{ "Stats", "Primary Needs", "Interactions", "Combat", "Magic", "Crime",
+            "Misc", "Insults" };
+        ASSERT_EQ(options.size(), names.size());
+        for (std::size_t i = 0; i < names.size(); ++i)
+        {
+            EXPECT_EQ(options[i].mLabel, names[i]);
+            ASSERT_EQ(options[i].mChildren.size(), 1);
+            EXPECT_TRUE(options[i].mChildren[0].mSection.empty());
+        }
+        EXPECT_EQ(options[0].mId, "SC_STATS");
+        EXPECT_EQ(options[0].mChildren[0].mText, "Quests 4");
+    }
+
+    TEST(MWAccessibilityLuaStats, AnonymousWrappersAreTransparentAtMultipleDepths)
+    {
+        auto inner = section("inner", "", {});
+        inner.mSections = { section("named", "Authored heading", { line("x", "Row", "1") }) };
+        auto outer = section("outer", "", {});
+        outer.mSections = { inner };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { outer }) };
+        const auto options = buildOptions(tree);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "named");
+        EXPECT_EQ(options[0].mLabel, "Authored heading");
+    }
+
+    TEST(MWAccessibilityLuaStats, UnnamedSectionsWithOwnRowsAreNotDiscarded)
+    {
+        auto root = section("unnamed", "", { line("own", "Own stat", "1") });
+        root.mSections = { section("child", "Child", { line("nested", "Nested stat", "2") }) };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mLabel, "unnamed");
+        ASSERT_EQ(options[0].mChildren.size(), 2);
+        EXPECT_EQ(options[0].mChildren[0].mId, "nested");
+        EXPECT_EQ(options[0].mChildren[1].mId, "own");
+    }
+
+    TEST(MWAccessibilityLuaStats, HiddenOwnRowsDoNotPreventPromotion)
+    {
+        auto hidden = line("hidden", "Hidden stat", "1");
+        hidden.mVisible = false;
+        auto root = section("root", "", { hidden });
+        root.mSections = { section("child", "Child", { line("shown", "Shown stat", "2") }) };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "child");
+        ASSERT_EQ(options[0].mChildren.size(), 1);
+        EXPECT_EQ(options[0].mChildren[0].mId, "shown");
+    }
+
+    TEST(MWAccessibilityLuaStats, NamedWrapperStillKeepsItsGroupsTogether)
+    {
+        auto root = section("root", "Named parent", {});
+        root.mSections = { section("child", "Child", { line("x", "Row", "1") }) };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mLabel, "Named parent");
+        EXPECT_EQ(options[0].mChildren[0].mSection, "Child");
+    }
+
+    TEST(MWAccessibilityLuaStats, EngineNamedWrapperIsNotPromoted)
+    {
+        auto root = section("attributes", "", {});
+        root.mSections = { section("child", "Child", { line("x", "Row", "1") }) };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "attributes");
+        EXPECT_EQ(options[0].mLabel, "Attributes");
+    }
+
+    TEST(MWAccessibilityLuaStats, HiddenWrappersAndChildrenStayHidden)
+    {
+        auto hidden = section("hidden", "Hidden", { line("x", "Row", "1") });
+        hidden.mVisible = false;
+        auto root = section("root", "", {});
+        root.mSections
+            = { hidden, section("empty", "Empty", {}), section("shown", "Shown", { line("y", "Visible", "2") }) };
+        auto hiddenRoot = root;
+        hiddenRoot.mVisible = false;
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { hiddenRoot, root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 1);
+        EXPECT_EQ(options[0].mId, "shown");
+    }
+
+    TEST(MWAccessibilityLuaStats, PromotedGroupsKeepWrapperAndChildPlacementOrder)
+    {
+        auto first = section("first", "First", { line("x", "X", "1") });
+        auto second = section("second", "Second", { line("y", "Y", "2") });
+        second.mPlacement.mType = LuaPlacementType::Before;
+        second.mPlacement.mTarget = "first";
+        auto root = section("root", "", {});
+        root.mPlacement.mType = LuaPlacementType::Top;
+        root.mSections = { first, second };
+        LuaStatsTree tree;
+        tree.mBoxes = { box("b", { section("sibling", "Sibling", { line("z", "Z", "3") }), root }) };
+        const auto options = buildOptions(tree, labelFor);
+        ASSERT_EQ(options.size(), 3);
+        EXPECT_EQ(options[0].mId, "second");
+        EXPECT_EQ(options[1].mId, "first");
+        EXPECT_EQ(options[2].mId, "sibling");
     }
 
     TEST(MWAccessibilityLuaStats, AHeaderFromTheModAlwaysWinsOverTheLabeller)

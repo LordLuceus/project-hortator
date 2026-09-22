@@ -112,6 +112,39 @@ namespace MWAccessibility
                 items.push_back(std::move(item));
             }
         }
+
+        void appendOptions(
+            const LuaStatsSection& section, const LuaSectionLabeller& labeller, std::vector<LuaStatsOption>& options)
+        {
+            if (countVisibleLines(section) == 0)
+                return;
+
+            std::string label = section.mHeader;
+            if (label.empty() && labeller)
+                label = labeller(section.mId);
+
+            // An unnamed section with no visible rows of its own is only a
+            // layout container (e.g. Enumeratio's SC_ROOT / SC_LEFT_ROOT).
+            // Promote its groups in their authored order instead of making
+            // the player open an internal id to reach meaningful headings.
+            // Keep named sections and sections with their own rows intact.
+            const bool hasOwnRows = std::any_of(
+                section.mLines.begin(), section.mLines.end(), [](const LuaStatsLine& line) { return line.mVisible; });
+            if (label.empty() && !hasOwnRows)
+            {
+                for (const LuaStatsSection* child : orderedSections(section.mSections))
+                    appendOptions(*child, labeller, options);
+                return;
+            }
+
+            LuaStatsOption option;
+            option.mId = section.mId;
+            // Truly unlabelled data-bearing sections still need a fallback:
+            // never discard their rows or guess a title from their contents.
+            option.mLabel = label.empty() ? section.mId : std::move(label);
+            option.mChildren = flattenSection(section);
+            options.push_back(std::move(option));
+        }
     }
 
     std::vector<std::size_t> orderByPlacement(
@@ -198,29 +231,7 @@ namespace MWAccessibility
             const LuaStatsBox& box = tree.mBoxes[boxIndex];
 
             for (const LuaStatsSection* section : orderedSections(box.mSections))
-            {
-                // A section with nothing visible in it (the mod hides rows whose
-                // data is absent -- Bounty at zero, Sign for a character with
-                // none) would be a dead end the user has to back out of.
-                if (countVisibleLines(*section) == 0)
-                    continue;
-
-                LuaStatsOption option;
-                option.mId = section->mId;
-                option.mLabel = section->mHeader;
-
-                if (option.mLabel.empty() && labeller)
-                    option.mLabel = labeller(section->mId);
-
-                // Last resort: the mod's own id. Worse than a real name, but a
-                // nameless submenu is unusable, and the id is at least a word
-                // that appears in that mod's documentation.
-                if (option.mLabel.empty())
-                    option.mLabel = section->mId;
-
-                option.mChildren = flattenSection(*section);
-                options.push_back(std::move(option));
-            }
+                appendOptions(*section, labeller, options);
         }
 
         return options;

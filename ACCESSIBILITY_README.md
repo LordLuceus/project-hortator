@@ -156,6 +156,10 @@ are built on top of that one. Where the original window is replaced, the screen
 reader reads the *replacement*, including any extra lines the mod adds, so the
 Stats pane keeps working and stays in the Tab cycle. You do not need to
 configure anything, and if you use no such mod nothing changes.
+Unnamed layout containers are skipped so that their named groups appear
+directly in the Stats pane. For example, Enumeratio's counters appear under its
+own headings, such as Combat and Magic, rather than internal section IDs.
+Named sections and sections with stats of their own keep their grouping.
 Attributes and skills with permanent damage are announced as "damaged" in both
 the original and replacement character sheets, including their detail readouts.
 Temporary Drain and Absorb effects do not trigger that warning.

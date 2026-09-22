@@ -84,6 +84,8 @@ namespace MWAccessibility
     /// One option per visible section, in the mod's display order. Sections
     /// whose rows are all hidden are dropped, so no option expands to nothing.
     /// \p labeller names any section the mod left unheaded.
+    /// Unnamed sections with no visible rows of their own are transparent:
+    /// their child groups become options, recursively, in display order.
     std::vector<LuaStatsOption> buildOptions(const LuaStatsTree& tree, const LuaSectionLabeller& labeller = {});
 
     /// Join a label and a value for speech, e.g. ("Health", "42 / 60") ->
