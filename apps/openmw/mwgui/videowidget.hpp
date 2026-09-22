@@ -41,6 +41,9 @@ namespace MWGui
         /// @return Is the video still playing?
         bool update();
 
+        /// Current movie playback position, in seconds (not wall-clock time).
+        double getCurrentTime();
+
         /// Return true if a video is currently playing and it has an audio stream.
         bool hasAudioStream();
 

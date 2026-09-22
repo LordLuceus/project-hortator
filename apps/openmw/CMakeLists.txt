@@ -50,7 +50,7 @@ add_openmw_dir (mwgui
 
 add_openmw_dir (mwgui/accessibility
     speech element screen uimanager spelltext editfield booktext itemtext panegroup activeeffects
-    luastatspane
+    luastatspane videodescription
     )
 
 add_openmw_dir (mwdialogue
@@ -119,7 +119,7 @@ add_openmw_dir (mwstate
 
 add_openmw_dir (mwaccessibility
     scanner autowalker proximitycue spokenformat itembucket hud verticalshaft markremap hazard
-    tutorialhints roads luastatsspeech luastatsreader statdamage
+    tutorialhints roads luastatsspeech luastatsreader statdamage videodescription
     )
 
 add_openmw_dir (mwbase

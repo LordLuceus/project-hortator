@@ -19,6 +19,29 @@ see **Reporting problems** at the bottom.
 
 ---
 
+## Cutscene audio description
+
+The original Morrowind opening cutscene is described automatically through your
+screen reader, including its written introduction. There is nothing to enable,
+and it does not depend on the setting for reading dialogue subtitles aloud.
+Other movies are unchanged unless a mod supplies a description for them.
+
+Descriptions follow the movie's playback clock and use your usual speech rate.
+A line is allowed to finish after its timed window, with later lines queued
+behind it. The original voices and music keep playing: slower speech can fall
+behind or overlap dialogue, so the script may need adjustment for your preferred
+rate. **Escape** skips the opening movie and stops its narration. Reaching the
+end of the movie also clears unfinished narration before returning to the game.
+Minimising the game stops current and queued speech; it is not replayed when
+you return, though later descriptions continue with the movie.
+
+Only the English description of the original opening is bundled. Translations,
+replacement movies and other cutscenes can use their own description files; see
+[Adding or replacing cutscene descriptions](ACCESSIBILITY_MODDING.html#adding-or-replacing-cutscene-descriptions)
+in the modding guide, which also explains how to disable a particular description.
+
+---
+
 ## What you need
 
 1. **A copy of Morrowind's game data.** You must own Morrowind (Steam, GOG, or

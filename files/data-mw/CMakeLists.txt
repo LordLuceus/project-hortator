@@ -3,6 +3,9 @@ if (NOT DEFINED OPENMW_RESOURCES_ROOT)
 endif()
 
 set(BUILTIN_DATA_MW_FILES
+    # Spoken descriptions for the original Morrowind opening movie.
+    video/mw_intro.bik.ad.srt
+
     # Month names and date formatting
     l10n/Calendar/de.yaml
     l10n/Calendar/en.yaml

@@ -25,6 +25,7 @@ Two things to know before the tables:
 - [Information and orientation](#information-and-orientation)
 - [The accessible HUD](#the-accessible-hud)
 - [Menus, lists and dialogs](#menus-lists-and-dialogs)
+- [Cutscenes](#cutscenes)
 - [Typing in a text box](#typing-in-a-text-box)
 - [Conversations](#conversations)
 - [Inventory, containers and companions](#inventory-containers-and-companions)
@@ -178,6 +179,18 @@ When a submenu is open:
 | **T** / **Shift + T** | Cycle the extra detail lines for the focused item, forwards / backwards |
 | **Escape** or **Left** | Close the submenu and go back to the option it came from |
 | **Enter / Space** | Activate the item, if it does anything |
+
+---
+
+## Cutscenes
+
+| Key | Action |
+| --- | --- |
+| **Escape** | Skip the movie when the game allows it, including the opening cutscene. Also stops its audio description |
+
+Audio description starts automatically for movies with a description file. It
+uses your screen reader's speech settings, not the Accessibility Cues volume.
+Only the original opening movie has a bundled description so far.
 
 ---
 

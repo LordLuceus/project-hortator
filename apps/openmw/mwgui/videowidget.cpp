@@ -72,6 +72,11 @@ namespace MWGui
         return mPlayer->update();
     }
 
+    double VideoWidget::getCurrentTime()
+    {
+        return mPlayer->getCurrentTime();
+    }
+
     void VideoWidget::stop()
     {
         mPlayer->close();

@@ -1,0 +1,31 @@
+1
+00:00:00,800 --> 00:00:06,500
+Text: 'Each Event is preceded by Prophecy. But without the hero, there is no Event.' Zurin Arctus, the Underking.
+
+2
+00:00:07,500 --> 00:00:21,500
+Text scrolls: 'In the waning years of the Third Era of Tamriel, a prisoner born on a certain day to uncertain parents was sent under guard, without explanation, to Morrowind, ignorant of the role he was to play in that nation's history...'
+
+3
+00:00:23,500 --> 00:00:27,500
+A desolate wasteland emerges beneath a thick, blood-red fog.
+
+4
+00:00:34,500 --> 00:00:36,000
+Glowing runes drift through the mist.
+
+5
+00:00:43,500 --> 00:00:46,000
+The runes dissolve into text: 'Many fall, but one remains.'
+
+6
+00:00:46,500 --> 00:00:49,000
+Torrential rain pours over a swamp where a shirtless dark elf stands at the shore.
+
+7
+00:00:49,500 --> 00:00:51,000
+Surreal visions flash of a moon in space and ocean islands at night.
+
+8
+00:00:53,500 --> 00:00:55,000
+A wooden ship railing sinks into water beneath a stormy sky, fading to black.

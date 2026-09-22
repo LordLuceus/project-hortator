@@ -305,6 +305,61 @@ Tamriel Rebuilt compatibility addon.
 
 ---
 
+## Adding or replacing cutscene descriptions
+
+Project Hortator can speak timed descriptions alongside a foreground movie.
+The original Morrowind opening has an English description included. Background
+menu videos are not narrated, and other cutscenes need their own scripts.
+
+Create a normal OpenMW data folder with a `video` subfolder. Inside it, put a
+UTF-8, plain-text SRT file named after the **complete movie filename**, followed
+by `.ad.srt`. For example, the opening movie `mw_intro.bik` uses
+`video/mw_intro.bik.ad.srt`. Add the data folder through the launcher's Data
+Directories controls, as with other mods. No plugin or Lua script is needed.
+Restart the game after adding or editing the file.
+
+Each cue has a numeric index, a start and end timestamp, and one or more lines
+of text. Separate cues with a blank line and put them in start-time order:
+
+```srt
+1
+00:00:00,800 --> 00:00:06,500
+The text you want the screen reader to say.
+
+2
+00:00:07,500 --> 00:00:10,000
+The next description.
+```
+
+Timestamps are hours, minutes, seconds and three-digit milliseconds. Use plain
+text rather than subtitle formatting tags. Multiple text lines in a cue are
+read as one paragraph. UTF-8 with or without a BOM and Windows or Unix line
+endings are accepted. The spoken text also supports OpenMW's usual localization
+tags, though a translated SRT file is enough for most description scripts.
+
+The start time makes a cue eligible to speak. Its end time prevents an entirely
+missed cue from being started late after a playback stall; it does **not** cut
+off a description already sent to the screen reader. Speech is queued, so slow
+reading can delay later cues or overlap the original voices. Test your script
+at the speech rates you expect people to use. The game does not slow the movie,
+change the voice rate, or lower its original soundtrack for narration.
+Skipping, ending or quitting the movie clears narration. Minimising stops
+current and queued speech without replaying it on return.
+
+Normal data-directory priority applies. A later mod can replace the description
+with a translation or one timed to a replacement movie. A replacement movie with
+the same filename will otherwise inherit the original description, even if its
+timing or visuals differ; supply a matching script in that case. To disable a
+particular description, override its `.ad.srt` with an empty file. A missing file
+simply means no description. A malformed file is rejected without blocking the
+movie, with a spoken warning and details in `openmw.log`.
+
+For testing the original introduction without starting a new game, use the
+in-game console command `PlayBink "mw_intro.bik" 1`. Escape can skip it. Close
+the console afterwards to return to play.
+
+---
+
 ## If something goes wrong
 
 Work backwards. A modded Morrowind that misbehaves is almost always a load-order

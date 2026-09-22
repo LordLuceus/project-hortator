@@ -87,6 +87,7 @@
 #include "console.hpp"
 #include "accessibility/screen.hpp"
 #include "accessibility/uimanager.hpp"
+#include "accessibility/videodescription.hpp"
 #include "container.hpp"
 #include "controllerbuttonsoverlay.hpp"
 #include "controllers.hpp"
@@ -2208,7 +2209,8 @@ namespace MWGui
 
     void WindowManager::playVideo(std::string_view name, bool allowSkipping, bool overrideSounds)
     {
-        mVideoWidget->playVideo("video\\" + std::string{ name });
+        const std::string video = "video\\" + std::string{ name };
+        mVideoWidget->playVideo(video);
 
         mVideoWidget->eventKeyButtonPressed.clear();
         mVideoBackground->eventKeyButtonPressed.clear();
@@ -2238,6 +2240,8 @@ namespace MWGui
             MWBase::Environment::get().getSoundManager()->pauseSounds(
                 MWSound::VideoPlayback, ~MWSound::Type::Movie & MWSound::Type::Mask);
 
+        // Foreground movies only: menu backgrounds do not use this path.
+        A11y::VideoDescription description(*mResourceSystem->getVFS(), video);
         Misc::FrameRateLimiter frameRateLimiter
             = Misc::makeFrameRateLimiter(MWBase::Environment::get().getFrameRateLimit());
         while (mVideoWidget->update() && !MWBase::Environment::get().getStateManager()->hasQuitRequest())
@@ -2251,12 +2255,18 @@ namespace MWGui
             if (!mWindowVisible)
             {
                 mVideoWidget->pause();
+                description.stop();
                 std::this_thread::sleep_for(std::chrono::milliseconds(5));
             }
             else
             {
                 if (mVideoWidget->isPaused())
                     mVideoWidget->resume();
+
+                // Input may have skipped/closed the video this frame. A
+                // closed player remains paused, so never start a cue then.
+                if (!mVideoWidget->isPaused() && !MWBase::Environment::get().getStateManager()->hasQuitRequest())
+                    description.update(mVideoWidget->getCurrentTime());
 
                 mViewer->eventTraversal();
                 mViewer->updateTraversal();
@@ -2270,6 +2280,8 @@ namespace MWGui
             frameRateLimiter.limit();
         }
         mVideoWidget->stop();
+        // Clear queued descriptions before gameplay/menu focus can speak.
+        description.stop();
 
         MWBase::Environment::get().getSoundManager()->resumeSounds(MWSound::VideoPlayback);
 

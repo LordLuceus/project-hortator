@@ -4,6 +4,18 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-22
+
+- **The opening cutscene now has spoken audio description.** Its written
+  introduction and visual scenes are read by your screen reader at timed points
+  during the movie. Descriptions use your normal speech speed and may finish
+  after their allotted window; later lines queue rather than cutting them off.
+  Skipping or finishing the movie clears any remaining narration. The movie's
+  original voices and music are unchanged, so at slower speech speeds the
+  description may overlap them. Only the original opening movie has a bundled
+  description so far; modders can supply timed description files for other
+  movies, or replace the opening description with a translation or revised script.
+
 ## 2026-09-21
 
 - **Item transfers now use Enter for the count picker and Shift+Enter for the
