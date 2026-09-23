@@ -202,6 +202,14 @@ target_link_libraries(openmw-lib
     components
 )
 
+if (MSVC)
+    # Large symbol databases can exhaust the default 4 KiB page format after
+    # repeated links (LNK1318 LIMIT). Keep full debugging information with a
+    # larger addressable database, without changing runtime code or optimization.
+    target_link_options(openmw PRIVATE
+        "$<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:/PDBPAGESIZE:16384>")
+endif()
+
 if (MSVC AND PRECOMPILE_HEADERS_WITH_MSVC)
     target_precompile_headers(openmw-lib PRIVATE
         <boost/program_options/options_description.hpp>
