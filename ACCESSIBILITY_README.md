@@ -305,7 +305,7 @@ Some things that matter are features of the landscape itself rather than objects
 in it — a lava pool, the open shaft that is the only way between floors of a
 Telvanni tower, or the road an NPC just told you to follow. These live in the
 scanner's **Terrain** category (**Ctrl + 9**), with subcategories **All**,
-**Hazards**, **Shafts** and **Roads** you can move between using the usual
+**Hazards**, **Shafts** and **Roads and foyadas** you can move between using the usual
 subcategory keys.
 
 Putting them in the scanner means they behave like every other target: cycle
@@ -367,95 +367,65 @@ health (around ten points) before it acts, so expect to be hurt a little rather
 than not at all; and it stays out of the way while something is fighting you,
 since yanking you backwards mid-combat would be worse than the damage.
 
-### Roads
+### Roads and foyadas (experimental)
 
-People give directions by landmark: *"follow the road east of Balmora"*, *"take
-the road to Pelagiad"*. Roads are painted into the landscape rather than being
-objects in it, so until now there was no way to act on that — the best you could
-do was set off in roughly the right direction.
+Terrain's **Roads and foyadas** subcategory lists routes to named places, rather than
+anonymous stretches of paving. Each entry tells you its destination, the compass
+direction to that destination's approach, and approximate route length,
+then separately where to join the road. These two directions can differ when
+the road bends. Routes are ordered by
+distance. Your current named area is excluded, and districts named after it
+(such as "Bal Foyen, Docks") count as the same place. **Undiscovered destination
+names are included**, so this can reveal places you have not visited.
 
-Roads now appear in the scanner under Terrain's **Roads** subcategory. Each
-entry is one continuous stretch of road near you, nearest first, and as well as
-the usual distance and bearing it tells you **which way the road runs**, for
-example *"Road, running northeast to southwest. 24 metres, east. 1 of 3."* The
-bearing tells you where the road is; the direction tells you where it goes. As with any
-other scanner entry you can face it, put the audio beacon on it, or auto-walk to
-it — which walks you to the edge of the road and leaves you standing on it.
+Press **Shift + Enter** or **Space** to join and follow the selected route.
+Both keys do the same thing; there is no compass-direction question. **Enter**
+faces the road entrance, and **Ctrl + Enter** puts the beacon on that entrance,
+not on the distant destination. Ordinary non-road targets keep their existing
+controls. No configuration or separate mod-specific setup is needed.
 
-The direction is given as both ends of the road ("northeast to southwest")
-because a road has no inherent forward. Where a stretch genuinely has no single
-direction — a crossroads, or a paved area in front of a building — you'll simply
-hear *"Road"* rather than a made-up heading.
+The route is planned before you select it. Turns and junctions follow that
+plan instead of whichever branch happens to be straightest. Joining accepts
+a nearby walkable point rather than insisting on an exact road-tile centre.
+Roughly every 150 metres you hear the destination and distance travelled.
+Your movement keys cancel, including between route sections. Starting another
+walk or engaging lock-on also stops the old route.
 
-#### Following a road (experimental)
+Routes can also follow recognized dry volcanic channels, so a journey such as
+**Balmora to Ghostgate through Foyada Mamaea** need not end where the painted
+road does. These entries say **"via foyada"** and can combine roads and channels.
+You can select a destination while already in the channel, using the same keys.
+The planner checks terrain steepness against the game's walking limit instead
+of treating all ash or volcanic rock as a road. Ordinary painted-road links
+keep their existing rules.
 
-> **This one is experimental.** It works, but it's a new idea and we're not yet
-> sure it's the *right* idea — following a road may turn out to be less useful
-> in practice than it sounds, or the way it asks you which way to go may need
-> rethinking. It may change substantially, or be replaced by something better,
-> in a later release. Finding roads in the scanner (above) is not experimental.
-> Please say what you think of it.
+The game does not attach foyada names to these terrain records, so the scanner
+names the **destination**, not the particular foyada. This is terrain-based
+recognition, not a hand-drawn catalogue of every named ravine. Mods reusing the
+recognized dry-channel materials are supported; different materials may be missed.
 
-Finding a road is only half of it — you usually want to *travel* it. Press
-**Activate** (Space) on a road in the scanner and you'll be asked which way —
-and told where each way actually goes:
+Arrival means reaching the **approach to the named area**, not its town
+centre or a particular building. A failed section stops the walk rather than
+being announced as the road ending or as a successful arrival.
 
-> *"North: 318 metres, ends in open country, northeast overall. South: 141
-> metres, ends at Balmora. Press an arrow key to choose."*
+> **Road and foyada routes remain experimental.** This replaces the earlier compass-based
+> follower after real play exposed its limitations. The design and coverage may
+> change again; feedback on useful journeys and failed approaches is welcome.
+> Terrain's **Hazards** and **Shafts** features are unchanged and are not part
+> of this experiment.
 
-The arrow keys are compass directions here: **Up** is north, **Down** south,
-**Left** west, **Right** east. Press one and it takes whichever end of the road
-best matches. **Nothing moves until you choose** — the road has two ends and
-only you know which one you want. Any other key cancels, and the question
-lapses on its own after a few seconds.
-
-That description is not a guess: the whole route is walked before you're asked,
-using the same rule the walk itself follows. Three things in it are worth
-knowing:
-
-- **Where it ends** — a named place if the road finishes at or beside one, or
-  plainly *"ends in open country"* if it doesn't. Only about half of routes end
-  somewhere nameable, so this is honest rather than optimistic.
-- **"X overall"** appears when the road bends so much that its general direction
-  isn't the way it sets off. A road leaving north can finish up south of you.
-- **"loops back here"** means the road curves round and returns you roughly to
-  where you started.
-
-This matters more than it sounds. Roads out of a town often bend straight back
-into it, so *"south: 141 metres, ends at Balmora"* tells you not to bother —
-whereas the old prompt would only have said the road ran north and south, and
-you'd have found out by walking it.
-
-Once you've chosen, it walks you onto the road (if you aren't already on it) and
-then keeps going along it, confirming the plan and the destination:
-
-> *"Walking to the road, then following it north, to Caldera."*
-
-This can be a very long walk — Balmora's road runs for well over a kilometre —
-so roughly every 150 metres you'll hear how far you've come and which way you're
-now heading (*"210 metres along the road, north."*). A road bends, so that
-second part can change as you go.
-
-Note the difference between the two keys: **Shift + Enter** walks you to the
-road and stops there, like any other scanner target. **Space** walks the road.
-
-At a junction it keeps going as straight as the road allows, without stopping to
-ask. Most of Morrowind's "junctions" are simply a road two or three tiles wide,
-so stopping at each one would mean stopping constantly. This does mean that at a
-genuine fork it takes the straighter branch rather than consulting you — if that
-isn't where you wanted to go, stop and pick the other road from the scanner.
-
-It stops by itself when the road runs out (*"The road ends here."*), and if the
-road loops back on itself it stops rather than circling forever. Everything that
-stops a normal auto-walk stops this too: any movement key, combat, a hazard, or
-getting stuck — and it reports why in the usual way.
-
-This reads the same road surfaces the game's own landscape uses, so it covers
-every region's roads, and mods that paint their roads the usual way are picked up
-without any extra work. Two limits worth knowing: this is an outdoor feature, so
-there is nothing to report inside a building, and paved courtyards inside Daedric
-ruins are deliberately ignored, as they are decoration rather than a road to
-anywhere.
+The planner reads the installed game's road textures, including appropriately
+named textures from mods, and recognized dry-channel terrain. It requires a
+connected route into a named outdoor area. **Neither painted roads nor terrain
+checks prove a clear walking path.** Buildings, rocks and damaging lava objects
+are not described by ground textures alone; the walking checks still apply, and
+a proposed foyada route may stop rather than get past an obstruction. Bridges,
+gaps in recognized terrain, differently named textures and approaches ending outside
+the named area can leave real journeys missing. The planner does not invent
+connections across unknown ground. Obstacles and the usual auto-walk limits
+can still stop a listed route. No route listed does not mean no road or foyada exists.
+Anonymous or local-only road patches are no longer separate scanner entries;
+roads inside buildings and decorative Daedric paving are not included.
 
 ---
 

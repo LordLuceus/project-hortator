@@ -85,7 +85,7 @@ here" is a much shorter list than "what is in this room".
 Four categories only appear while they have something in them: **Detected**
 (while a Detect effect is revealing something), **Waypoints** (once you have a
 map note or a Mark), **Locations** (once you have discovered a named place) and
-**Terrain** (near damaging terrain, a levitation shaft or a road). Cycling with
+**Terrain** (near damaging terrain, a levitation shaft or a road/foyada route). Cycling with
 Ctrl + Page Down skips them when they are empty, so the ring you hear is often
 shorter than ten. Their **Ctrl + number** keys always work regardless, and
 announce "0 in range" when there is nothing there — so use Ctrl + 6 … 9 to check
@@ -98,11 +98,10 @@ a category rather than assuming it is missing.
 | Key | Action |
 | --- | --- |
 | **Enter** | Face the target |
-| **Shift + Enter** | Auto-walk to the target |
+| **Shift + Enter** | Auto-walk to the target. On a road or foyada route, join and follow the selected destination route (experimental) |
 | **Ctrl + Enter** | Toggle the audio beacon on the target |
 | **Ctrl + Shift + Enter** | Teleport to the target — a last resort, not fast travel. Warns you to explore properly first and asks you to confirm (you can turn the warning off once you've read it). Limited to about 58 metres, and unavailable during character creation. Followers in range come with you |
-| **Space** | Activate the target (open, take, talk). On a road, ask which way to follow it, then walk it (experimental -- see Terrain: Roads). With nothing selected, works as normal Activate |
-| **Up** / **Down** / **Left** / **Right** | Only while being asked which way to follow a road (experimental): north, south, west, east respectively. Any other key cancels |
+| **Space** | Activate the target (open, take, talk). On a road or foyada route, join and follow it, just like Shift + Enter (experimental -- see Terrain: Roads and foyadas). With nothing selected, works as normal Activate |
 | **X** | Toggle lock-on to the target, so you stay aimed at it |
 | **Shift + X** | Engage: jump to the nearest hostile and lock on, in one press |
 | **K** | Mark / unmark the target as "already looked at" |

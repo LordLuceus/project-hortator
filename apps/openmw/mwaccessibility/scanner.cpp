@@ -2,6 +2,7 @@
 
 #include "itembucket.hpp"
 #include "markremap.hpp"
+#include "roadnetwork.hpp"
 #include "roads.hpp"
 #include "spokenformat.hpp"
 
@@ -259,15 +260,6 @@ using MWAccessibility::kPi;
     // walk would be worse than silence. 150 metres is roughly 20 road tiles.
     constexpr float kRoadCalloutDistance = 150.f * kUnitsPerMetre;
 
-    // How long the "which way?" road prompt waits for an arrow key. Long enough
-    // to hear the question and think, short enough that a forgotten prompt can
-    // never swallow a keystroke meant for something else.
-    constexpr float kRoadPromptTimeout = 8.f;
-
-    // How close counts as "already on the road", deciding whether the spoken plan
-    // mentions walking there first. Half a road tile: inside this the player is on
-    // the tile already, so announcing a walk to it would be wrong.
-    constexpr float kRoadOnItDistance = MWAccessibility::kRoadTileSize * 0.5f;
     // Below this, a bearing is meaningless and the honest phrasing is "at your
     // feet". Matches the shaft readout's kShaftHereRadius (~0.75 m).
     constexpr float kHazardHereRadius = 52.5f;
@@ -535,12 +527,12 @@ using MWAccessibility::kPi;
     // are null: Terrain's members are bare positions (not Ptrs), so the
     // filtering happens in rebuildCurrentList's Terrain branch keyed on the
     // subcategory index, in this order: 0 = All, 1 = Hazards, 2 = Shafts,
-    // 3 = Roads.
+    // 3 = Roads and foyadas.
     constexpr Subcategory kTerrainSubs[] = {
         { "All", nullptr },
         { "Hazards", nullptr },
         { "Shafts", nullptr },
-        { "Roads", nullptr },
+        { "#{Interface:RoadsAndFoyadas}", nullptr },
     };
 
     // Returns the subcategory table for a category. Empty span (size 0) means
@@ -1034,11 +1026,12 @@ namespace MWAccessibility
         // per-frame "target gone" checks there are NOT sufficient on their own.
         // A road route must go too: it holds only plain tile coordinates (no
         // Ptrs), so it would survive teardown and quietly resume walking in the
-        // freshly loaded world. Same for a pending direction prompt, which would
-        // otherwise capture the first arrow key pressed in the new world.
+        // freshly loaded world. Rebuild the graph from the new world's records.
         mFollowingRoad = false;
-        mRoadVisited.clear();
-        mAwaitingRoadDirection = false;
+        mActiveRoadRoute.reset();
+        mRoadPlanner.reset();
+        mRoadRoutesAt.reset();
+        mAvailableRoadRoutes.clear();
         mAutoWalker.cancel();
         mProximityCue.stop();
         mLastCellId = nullptr;
@@ -1464,7 +1457,6 @@ namespace MWAccessibility
         // funnels through the same "is it still active?" test, with no second code
         // path that could keep walking after a stop.
         updateRoadFollowing();
-        updateRoadPrompt(dt);
 
         // While the HUD is open and parked on the target row, keep that row in
         // sync with whichever actor the player cycles the scanner to.
@@ -1721,26 +1713,14 @@ namespace MWAccessibility
         // so a remapped or non-QWERTY (AZERTY/Dvorak/Colemak) player can still
         // cancel with their own forward/left/back/right keys -- and so a key
         // that's no longer movement for them doesn't cancel unexpectedly.
-        if (mAutoWalker.isActive() && isMovementKey(scancode))
+        if ((mAutoWalker.isActive() || mFollowingRoad) && isMovementKey(scancode))
         {
             // Drop any road route too, or updateRoadFollowing would start the
             // next leg and the walk would appear to refuse to stop.
             mFollowingRoad = false;
-            mRoadVisited.clear();
+            mActiveRoadRoute.reset();
             speak("Auto-walk cancelled.");
             mAutoWalker.cancel();
-        }
-
-        // While the road prompt is up the bare arrow keys mean compass directions.
-        // Checked BEFORE the main switch so it takes precedence over the Ctrl+arrow
-        // facing cluster -- and only for UNMODIFIED arrows, so Ctrl+Left still
-        // snaps the compass even with a prompt open. Any other key closes the
-        // prompt (inside handleRoadDirectionKey) and then falls through to its
-        // normal meaning, so the prompt can never swallow an unrelated keystroke.
-        if (mAwaitingRoadDirection && !ctrl && !shift && !alt)
-        {
-            if (handleRoadDirectionKey(scancode))
-                return true;
         }
 
         // Ctrl+number: jump straight to a category, skipping the cycle. The
@@ -2457,10 +2437,10 @@ namespace MWAccessibility
 
         // An auto-walk would fight the lock for control of the player's facing,
         // so cancel it first -- including any road route driving it.
-        if (mAutoWalker.isActive())
+        if (mAutoWalker.isActive() || mFollowingRoad)
         {
             mFollowingRoad = false;
-            mRoadVisited.clear();
+            mActiveRoadRoute.reset();
             mAutoWalker.cancel();
         }
 
@@ -3179,18 +3159,16 @@ namespace MWAccessibility
 
     bool Scanner::activateTarget()
     {
-        // Activating a selected ROAD asks which way to follow it, rather than
-        // walking to it and stopping. Space is otherwise dead on a Roads entry:
-        // waypoints have no Ptr, so activateTarget would fall straight through to
-        // a crosshair Activate that hits nothing -- the same reasoning that let
-        // signposts repurpose Activate below. Reusing the key beats inventing one,
-        // and "activate the road" reads as the natural counterpart to Shift+Enter
-        // (walk TO the road). Nothing moves until a direction is chosen.
+        // A road entry already identifies a destination: Activate and the
+        // scanner's ordinary walk action execute exactly the same route.
         if (mCategory == Category::Terrain && isWaypointCategory())
         {
             const Waypoint* wp = currentWaypoint();
-            if (wp && wp->mIsRoad && promptForRoadDirection())
+            if (wp && wp->mIsRoad)
+            {
+                walkToTarget();
                 return true;
+            }
         }
 
         MWWorld::Ptr target = currentTarget();
@@ -3284,6 +3262,9 @@ namespace MWAccessibility
 
     void Scanner::walkToTarget()
     {
+        // An ordinary walk replaces the road controller's ownership too, or
+        // finishing the new walk would resume the obsolete road route.
+        stopFollowingRoad({});
         // Auto-walk drives the player's facing toward path waypoints, which
         // would fight a lock-on for control. Release the lock so the walk runs
         // cleanly.
@@ -3299,6 +3280,11 @@ namespace MWAccessibility
             if (!wp)
             {
                 speak("No target selected.");
+                return;
+            }
+            if (wp->mRoadRoute)
+            {
+                startFollowingRoad(wp->mRoadRoute);
                 return;
             }
             // Can't auto-walk to a waypoint in another worldspace: there's no
@@ -3634,8 +3620,7 @@ namespace MWAccessibility
         // Clearing the selection abandons the road it referred to, and any
         // pending "which way?" prompt about it.
         mFollowingRoad = false;
-        mRoadVisited.clear();
-        mAwaitingRoadDirection = false;
+        mActiveRoadRoute.reset();
         mAutoWalker.cancel();
         mProximityCue.stop();
         speak("Selection cleared.");
@@ -5518,7 +5503,7 @@ namespace MWAccessibility
         const osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
 
         // Subcategory indices follow kTerrainSubs: 0 = All, 1 = Hazards,
-        // 2 = Shafts, 3 = Roads.
+        // 2 = Shafts, 3 = Roads and foyadas.
         const bool wantHazards = (subIndex == 0 || subIndex == 1);
         const bool wantShafts = (subIndex == 0 || subIndex == 2);
         const bool wantRoads = (subIndex == 0 || subIndex == 3);
@@ -5570,44 +5555,56 @@ namespace MWAccessibility
             }
         }
 
-        if (wantRoads)
+        if (wantRoads && player.getCell() && player.getCell()->getCell()->isExterior()
+            && player.getCell()->getCell()->getWorldSpace() == ESM::Cell::sDefaultWorldspaceId)
         {
-            for (const RoadStretch& r : collectNearbyRoads(player))
+            const osg::Vec2f position(playerPos.x(), playerPos.y());
+            const RoadTile tile = roadTileAt(position);
+            const std::string origin = player.getCell()->getCell()->getNameId().empty()
+                ? std::string()
+                : roadPlaceName(world->getCellName(player.getCell()));
+            if (!mRoadPlanner)
+                mRoadPlanner = loadRoadRoutePlanner();
+            if (!mRoadRoutesAt || !(*mRoadRoutesAt == tile) || mRoadRoutesOrigin != origin)
             {
+                const std::vector<RoadTile> entrances = mRoadPlanner->nearbyEntrances(position);
+                mAvailableRoadRoutes.clear();
+                for (RoadRoute& route : mRoadPlanner->routes(entrances, position, origin))
+                    mAvailableRoadRoutes.push_back(std::make_shared<RoadRoute>(std::move(route)));
+                mRoadRoutesAt = tile;
+                mRoadRoutesOrigin = origin;
+            }
+            for (const auto& route : mAvailableRoadRoutes)
+            {
+                if (route->mTiles.empty())
+                    continue;
                 Waypoint wp;
-                // Say which way the road runs where it passes nearest us. That is
-                // the one fact the generic waypoint readout (name, distance,
-                // bearing) cannot express, and it is exactly what makes an NPC's
-                // "follow the road east" actionable: the bearing tells you where
-                // the road IS, the axis tells you where it GOES. Roads that are
-                // too short or too blobby to have an honest direction (a junction,
-                // a paved forecourt) just say "Road" rather than inventing one.
-                wp.mName = "Road";
-                const std::string axis = describeRoadAxis(r.mDirection);
-                if (!axis.empty())
-                    wp.mName += ", running " + axis;
-
-                // Target the centre of the nearest road tile, at the player's own
-                // height. The land texture grid is flat data with no height of its
-                // own, and the terrain under it may rise or fall; letting the
-                // navmesh settle the Z on arrival is what every other waypoint
-                // does.
-                const osg::Vec2f centre = roadTileCentre(r.mNearest);
-                wp.mPosition = osg::Vec3f(centre.x(), centre.y(), playerPos.z());
+                wp.mName = MyGUI::LanguageManager::getInstance()
+                               .replaceTags(route->mUsesFoyada ? "#{Interface:RouteTo}" : "#{Interface:RoadTo}")
+                               .asUTF8()
+                    + " " + route->mDestination;
+                if (route->mUsesFoyada)
+                    wp.mName
+                        += ", " + MyGUI::LanguageManager::getInstance().replaceTags("#{Interface:ViaFoyada}").asUTF8();
+                const osg::Vec2f centre = roadTileCentre(route->mTiles.front());
+                wp.mPosition = osg::Vec3f(centre.x(), centre.y(), 0.f);
+                wp.mPosition.z() = world->getTerrainHeightAt(wp.mPosition, ESM::Cell::sDefaultWorldspaceId);
                 wp.mReachable = true;
                 wp.mIsRoad = true;
-                // Carry the axis we just SPOKE, so following offers the same two
-                // directions the player was told. Zero when there was none.
-                wp.mRoadAxis = r.mHasDirection ? r.mDirection : osg::Vec2f(0.f, 0.f);
+                wp.mRoadRoute = route;
                 out.push_back(std::move(wp));
             }
         }
 
-        // Nearest-first, matching every other category's ordering. All terrain
-        // entries are in the player's own cell, so they are always reachable and
-        // there is no unreachable group to sort after.
+        // Routes rank by walking distance, not merely by the shared entrance.
+        // Other terrain features retain their ordinary nearest-first order.
         std::sort(out.begin(), out.end(), [&playerPos](const Waypoint& a, const Waypoint& b) {
-            return (a.mPosition - playerPos).length2() < (b.mPosition - playerPos).length2();
+            const auto distance = [&playerPos](const Waypoint& wp) {
+                const osg::Vec2f offset(wp.mPosition.x() - playerPos.x(), wp.mPosition.y() - playerPos.y());
+                return offset.length() + (wp.mRoadRoute ? wp.mRoadRoute->mLength : 0.f);
+            };
+            const float first = distance(a), second = distance(b);
+            return first == second ? a.mName < b.mName : first < second;
         });
 
         // Disambiguate same-named entries ("Lava", "Lava", ...) the way the
@@ -5673,266 +5670,46 @@ namespace MWAccessibility
         });
     }
 
-    bool Scanner::promptForRoadDirection()
+    void Scanner::startFollowingRoad(std::shared_ptr<const RoadRoute> route)
     {
+        // EXPERIMENTAL (2026-09-23): destination-based replacement for greedy
+        // compass following. Painted connectivity still needs physical traversal
+        // checks from the walker; field testing must establish useful coverage.
         MWBase::World* world = MWBase::Environment::get().getWorld();
         MWWorld::Ptr player = world->getPlayerPtr();
-        if (player.isEmpty())
-            return false;
-
-        const Waypoint* wp = currentWaypoint();
-        if (!wp || !wp->mIsRoad)
-            return false;
-
-        const osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
-        // The selected entry's position is the centre of the nearest tile of that
-        // stretch, so it identifies which road the player means when several are
-        // in range.
-        const RoadTile tile = roadTileAt(osg::Vec2f(wp->mPosition.x(), wp->mPosition.y()));
-        if (!isRoadTileAt(tile))
-            return false;
-
-        // Use the axis the scanner ALREADY SPOKE for this entry, rather than
-        // fitting a fresh one. The same fit over a different sample of tiles gives
-        // a different answer -- refitting over just the 8 adjacent tiles reported
-        // "east and west" for a road the scanner had announced as "southeast to
-        // northwest" -- and the player can only choose between directions they
-        // were actually told about. One computation, one answer.
-        osg::Vec2f axis = wp->mRoadAxis;
-        if (axis.length2() <= 0.f)
-        {
-            // A junction or a shapeless paved patch: there is no "along" here, so
-            // there is nothing to offer. Say so rather than inventing two ends.
-            speak("This part of the road has no clear direction. Pick a road further along.");
-            return true;
-        }
-        axis.normalize();
-
-        // EXPERIMENTAL (2026-09-17). Road-following ships flagged as experimental
-        // in the player docs: the mechanism works and is measured, but whether
-        // this is the right ANSWER to "follow the road east of Balmora" is still
-        // open, and it went through three play-test rejections before becoming
-        // usable. Expect to revise or replace it on player feedback rather than
-        // treating the current shape as settled.
-        //
-        // Pre-walk BOTH directions before asking. The axis says which way the road
-        // runs where you stand; it says nothing about where the road GOES. A road
-        // leaving Balmora "northwest" bends round and returns to Balmora, so
-        // choosing northwest to reach Caldera sends you home -- the choice is only
-        // informed if the destination is on the table. Walking both routes costs
-        // about 0.02 ms, so there is no reason not to.
-        const RoadPreview previewA = previewRoad(tile, axis);
-        const RoadPreview previewB = previewRoad(tile, -axis);
-
-        // Neither way goes anywhere: this is a stub of road, not a route. Refuse
-        // rather than offering a choice between two dead ends.
-        if (previewA.mSteps <= 1 && previewB.mSteps <= 1)
-        {
-            speak("This road goes nowhere from here.");
-            return true;
-        }
-
-        mRoadChoiceTile = tile;
-        mRoadChoiceA = axis;
-        mRoadChoiceB = -axis;
-        mAwaitingRoadDirection = true;
-        mRoadPromptTime = 0.0f;
-
-        // Describe each way by where it ENDS, not just which way it sets off. The
-        // arrow keys are compass directions here, as every other bearing in the mod
-        // is spoken.
-        speak(describeRoadOption(axis, previewA) + " " + describeRoadOption(-axis, previewB)
-            + " Press an arrow key to choose.");
-        return true;
-    }
-
-    std::string Scanner::placeNameNearTile(const RoadTile& tile) const
-    {
-        MWBase::World* world = MWBase::Environment::get().getWorld();
-        if (!world)
-            return {};
-
-        // A road usually ends just OUTSIDE a town's named cells rather than inside
-        // them, so check the end tile's own cell first and then its neighbours.
-        // Nearest-first, so a route ending on a town's edge names that town rather
-        // than whatever else is one cell further out.
-        const std::int32_t cx = static_cast<std::int32_t>(std::floor(tile.mX / 16.0));
-        const std::int32_t cy = static_cast<std::int32_t>(std::floor(tile.mY / 16.0));
-
-        for (std::int32_t ring = 0; ring <= 1; ++ring)
-        {
-            for (std::int32_t dx = -ring; dx <= ring; ++dx)
-            {
-                for (std::int32_t dy = -ring; dy <= ring; ++dy)
-                {
-                    // Only the cells newly reached at this ring distance.
-                    if (std::max(std::abs(dx), std::abs(dy)) != ring)
-                        continue;
-                    const ESM::ExteriorCellLocation loc(cx + dx, cy + dy, ESM::Cell::sDefaultWorldspaceId);
-                    try
-                    {
-                        const MWWorld::CellStore& store
-                            = MWBase::Environment::get().getWorldModel()->getExterior(loc, /*forceLoad=*/false);
-                        const std::string_view name = world->getCellName(&store);
-                        // An unnamed exterior cell resolves to its REGION name,
-                        // which is not a destination ("Bitter Coast Region" tells
-                        // the player nothing about where the road went). Only a
-                        // genuine cell name counts as a place.
-                        if (!name.empty() && !store.getCell()->getNameId().empty())
-                            return std::string(name);
-                    }
-                    catch (const std::exception&)
-                    {
-                    }
-                }
-            }
-        }
-        return {};
-    }
-
-    std::string Scanner::describeRoadOption(const osg::Vec2f& heading, const RoadPreview& preview) const
-    {
-        const std::string dir = compassLabel(std::atan2(heading.x(), heading.y()));
-        if (preview.mSteps <= 1)
-            return dir + ": goes nowhere.";
-
-        std::string out = dir + ": " + formatDistance(preview.mLength);
-
-        // Where it ends. Only ~51% of routes finish near a named place, so say
-        // "open country" plainly for the rest rather than implying a destination
-        // we cannot name.
-        if (preview.mLoopsBack)
-        {
-            // The case that caught the player out: the road doubles back and
-            // returns him to where he began. Say so first -- it is the single most
-            // important fact about that option.
-            out += ", loops back here";
-        }
-        else
-        {
-            const std::string where = placeNameNearTile(preview.mEnd);
-            out += where.empty() ? ", ends in open country" : ", ends at " + where;
-
-            // Warn when the road bends so much that its overall direction is not
-            // the way it sets off -- otherwise "northwest" is a promise the route
-            // does not keep.
-            if (preview.mNetBearing.length2() > 0.f)
-            {
-                const std::string net = compassLabel(std::atan2(preview.mNetBearing.x(), preview.mNetBearing.y()));
-                if (net != dir)
-                    out += ", " + net + " overall";
-            }
-        }
-        return out + ".";
-    }
-
-    bool Scanner::handleRoadDirectionKey(int scancode)
-    {
-        if (!mAwaitingRoadDirection)
-            return false;
-
-        // Arrow keys as compass directions: up = north (+Y), right = east (+X).
-        osg::Vec2f wanted;
-        switch (scancode)
-        {
-            case SDL_SCANCODE_UP:
-                wanted = osg::Vec2f(0.f, 1.f);
-                break;
-            case SDL_SCANCODE_DOWN:
-                wanted = osg::Vec2f(0.f, -1.f);
-                break;
-            case SDL_SCANCODE_LEFT:
-                wanted = osg::Vec2f(-1.f, 0.f);
-                break;
-            case SDL_SCANCODE_RIGHT:
-                wanted = osg::Vec2f(1.f, 0.f);
-                break;
-            default:
-                // Any other key abandons the prompt rather than being swallowed:
-                // a prompt that eats an unrelated keystroke is worse than one that
-                // closes too eagerly.
-                mAwaitingRoadDirection = false;
-                speak("Cancelled.");
-                return false;
-        }
-
-        // Take whichever end of the road better matches the compass direction
-        // pressed. The two ends are opposite, so exactly one can win.
-        const osg::Vec2f chosen = (wanted * mRoadChoiceA) >= (wanted * mRoadChoiceB) ? mRoadChoiceA : mRoadChoiceB;
-        mAwaitingRoadDirection = false;
-        // Keep the route we described for this direction, so the confirmation
-        // names the same destination the prompt just offered.
-        mRoadPreview = previewRoad(mRoadChoiceTile, chosen);
-        startFollowingRoad(mRoadChoiceTile, chosen);
-        return true;
-    }
-
-    void Scanner::updateRoadPrompt(float dt)
-    {
-        if (!mAwaitingRoadDirection)
+        if (player.isEmpty() || !route || route->mTiles.empty())
             return;
-        mRoadPromptTime += dt;
-        if (mRoadPromptTime >= kRoadPromptTimeout)
-        {
-            mAwaitingRoadDirection = false;
-            speak("No direction chosen.");
-        }
-    }
-
-    bool Scanner::startFollowingRoad(const RoadTile& tile, const osg::Vec2f& heading)
-    {
-        MWBase::World* world = MWBase::Environment::get().getWorld();
-        MWWorld::Ptr player = world->getPlayerPtr();
-        if (player.isEmpty())
-            return false;
-
-        const osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
-
+        releaseLockOn(/*announce=*/false);
+        mActiveRoadRoute = std::move(route);
         mFollowingRoad = true;
-        mRoadTile = tile;
-        mRoadHeading = heading;
-        mRoadVisited.clear();
-        mRoadVisited.insert({ tile.mX, tile.mY });
+        mRoadStep = 0;
         mRoadTravelled = 0.0f;
         mRoadDistance = 0.0f;
-        mRoadLegStart = playerPos;
+        mRoadLegStart = player.getRefData().getPosition().asVec3();
+        if (!startRoadLeg())
+        {
+            stopFollowingRoad("#{Interface:RoadEntryBlocked}");
+            return;
+        }
+        speak(
+            std::string(mActiveRoadRoute->mUsesFoyada ? "#{Interface:FoyadaFollowing} " : "#{Interface:RoadFollowing} ")
+            + mActiveRoadRoute->mDestination + ".");
+    }
 
+    bool Scanner::startRoadLeg()
+    {
+        const RoadTile tile = mActiveRoadRoute->mTiles[mRoadStep];
         const osg::Vec2f centre = roadTileCentre(tile);
-        const osg::Vec3f legTarget(centre.x(), centre.y(), playerPos.z());
-        // Exact arrival, as levitation shafts use: the navmesh-snapped proxy can
-        // sit up to kNavMeshSnapRadius from the goal, which for a road means being
-        // dropped several metres BESIDE it -- the same fault shafts had before they
-        // opted in. Standing next to a road is not standing on it.
-        if (!mAutoWalker.start(legTarget, "the road", /*exactArrival=*/true))
-        {
-            mFollowingRoad = false;
-            speak("Cannot reach the road.");
-            return true;
-        }
+        osg::Vec3f target(centre.x(), centre.y(), 0.f);
+        target.z() = MWBase::Environment::get().getWorld()->getTerrainHeightAt(target, ESM::Cell::sDefaultWorldspaceId);
+        // A texture tile is an area, not a precision target. Use its terrain
+        // height and accept a nearby walkable point even on the first leg,
+        // rather than wedging against an obstacle over its mathematical centre.
+        const std::string label
+            = MyGUI::LanguageManager::getInstance().replaceTags("#{Interface:RoadCheckpoint}").asUTF8();
+        if (!mAutoWalker.start(target, label, /*exactArrival=*/false))
+            return false;
         mAutoWalker.setSilentArrival(true);
-
-        // Say the WHOLE plan up front, including the part the player might not
-        // expect: that we will walk to the road first and then keep going, and
-        // WHERE the road ends. Confirming the destination back means a misheard or
-        // mis-pressed direction is caught now rather than 300 metres later.
-        const std::string dir = compassLabel(std::atan2(heading.x(), heading.y()));
-        const float gap = std::sqrt((centre.x() - playerPos.x()) * (centre.x() - playerPos.x())
-            + (centre.y() - playerPos.y()) * (centre.y() - playerPos.y()));
-
-        std::string dest;
-        if (mRoadPreview.mLoopsBack)
-            dest = ", looping back here";
-        else
-        {
-            const std::string where = placeNameNearTile(mRoadPreview.mEnd);
-            if (!where.empty())
-                dest = ", to " + where;
-        }
-
-        if (gap > kRoadOnItDistance)
-            speak("Walking to the road, then following it " + dir + dest + ".");
-        else
-            speak("Following the road " + dir + dest + ".");
         return true;
     }
 
@@ -5940,6 +5717,20 @@ namespace MWAccessibility
     {
         if (!mFollowingRoad)
             return;
+
+        MWBase::World* world = MWBase::Environment::get().getWorld();
+        const MWWorld::Ptr player = world->getPlayerPtr();
+        if (player.isEmpty() || !player.getCell())
+        {
+            stopFollowingRoad({});
+            return;
+        }
+        if (!player.getCell()->getCell()->isExterior()
+            || player.getCell()->getCell()->getWorldSpace() != ESM::Cell::sDefaultWorldspaceId)
+        {
+            stopFollowingRoad("#{Interface:RoadAreaChanged}");
+            return;
+        }
 
         // Still walking this leg: nothing to do.
         if (mAutoWalker.isActive())
@@ -5952,55 +5743,34 @@ namespace MWAccessibility
         if (!mAutoWalker.arrived())
         {
             mFollowingRoad = false;
-            mRoadVisited.clear();
+            mActiveRoadRoute.reset();
             return;
         }
-
-        MWBase::World* world = MWBase::Environment::get().getWorld();
-        MWWorld::Ptr player = world->getPlayerPtr();
-        if (player.isEmpty())
-            return;
 
         const osg::Vec3f playerPos = player.getRefData().getPosition().asVec3();
 
-        // Keep going as straight as the road allows, refusing any tile already
-        // walked this run. The straightest rule alone would circle a ring road
-        // forever; the visited set turns that into an honest "the road ends here".
-        std::vector<RoadTile> candidates;
-        for (const RoadTile& nb : roadNeighboursOf(mRoadTile))
+        const osg::Vec2f centre = roadTileCentre(mActiveRoadRoute->mTiles[mRoadStep]);
+        const osg::Vec2f offset(playerPos.x() - centre.x(), playerPos.y() - centre.y());
+        // Relaxed proxy arrival must not advance a whole route while the player
+        // remains elsewhere. A tile diagonal's half-width plus a small margin
+        // admits its area but rejects remote partial-path endpoints.
+        if (!roadCheckpointReached(mActiveRoadRoute->mTiles[mRoadStep], osg::Vec2f(playerPos.x(), playerPos.y())))
         {
-            if (mRoadVisited.count({ nb.mX, nb.mY }) == 0)
-                candidates.push_back(nb);
-        }
-
-        RoadTile next{};
-        if (!chooseStraightestStep(candidates, mRoadTile, mRoadHeading, next))
-        {
-            stopFollowingRoad("The road ends here.");
+            Log(Debug::Warning) << "[a11y] road stop=checkpoint_shortfall step=" << mRoadStep
+                                << " distance=" << offset.length();
+            stopFollowingRoad("#{Interface:RoadRouteBlocked}");
             return;
         }
-
-        // Update the heading from the step we actually took, so the walk follows a
-        // curving road round rather than insisting on the original bearing.
-        mRoadHeading
-            = osg::Vec2f(static_cast<float>(next.mX - mRoadTile.mX), static_cast<float>(next.mY - mRoadTile.mY));
-        mRoadHeading.normalize();
-        mRoadTile = next;
-        mRoadVisited.insert({ next.mX, next.mY });
-
-        const osg::Vec2f centre = roadTileCentre(next);
-        const osg::Vec3f legTarget(centre.x(), centre.y(), playerPos.z());
-        // NOT exact arrival here, unlike the first leg. Getting ONTO the road has
-        // to be precise (landing 3 m to one side is the bug this feature had), but
-        // a mid-route tile centre is just a staging post: insisting on reaching it
-        // exactly would abandon the whole route over one awkward tile, and the next
-        // leg re-aims from wherever we actually stand anyway.
-        if (!mAutoWalker.start(legTarget, "the road", /*exactArrival=*/false))
+        if (++mRoadStep == mActiveRoadRoute->mTiles.size())
         {
-            stopFollowingRoad("The road is blocked.");
+            stopFollowingRoad("#{Interface:RoadApproachReached} " + mActiveRoadRoute->mDestination + ".");
             return;
         }
-        mAutoWalker.setSilentArrival(true);
+        if (!startRoadLeg())
+        {
+            stopFollowingRoad("#{Interface:RoadRouteBlocked}");
+            return;
+        }
 
         // Progress callout every so often, in the same spirit as a long progressive
         // auto-walk: the player is walking unattended for possibly a kilometre and
@@ -6020,17 +5790,17 @@ namespace MWAccessibility
             // Queued, NOT interrupting: a progress callout is the least urgent
             // thing the mod says, and must never cut off a hazard warning or a
             // combat announcement arriving in the same moment.
-            Accessibility::AccessibilityManager::instance().speak(
-                formatDistance(travelled) + " along the road, "
-                    + compassLabel(std::atan2(mRoadHeading.x(), mRoadHeading.y())) + ".",
-                /*interrupt=*/false);
+            const auto message = MyGUI::LanguageManager::getInstance().replaceTags(
+                std::string(mActiveRoadRoute->mUsesFoyada ? "#{Interface:RouteTo} " : "#{Interface:RoadTo} ")
+                + mActiveRoadRoute->mDestination + ", " + formatDistance(travelled) + " #{Interface:RoadTravelled}.");
+            Accessibility::AccessibilityManager::instance().speak(message.asUTF8(), /*interrupt=*/false);
         }
     }
 
     void Scanner::stopFollowingRoad(const std::string& reason)
     {
         mFollowingRoad = false;
-        mRoadVisited.clear();
+        mActiveRoadRoute.reset();
         mAutoWalker.cancel();
         if (!reason.empty())
             speak(reason);
@@ -6067,6 +5837,22 @@ namespace MWAccessibility
         // below, matching the target readout and auto-walk's horizontal measure.
         float dist = std::sqrt(delta.x() * delta.x() + delta.y() * delta.y());
         float targetYaw = std::atan2(delta.x(), delta.y());
+
+        if (wp->mRoadRoute)
+        {
+            const auto bearing = roadDestinationBearing(*wp->mRoadRoute, osg::Vec2f(playerPos.x(), playerPos.y()));
+            std::string destination = wp->mName;
+            if (bearing)
+            {
+                destination += ", ";
+                destination += compassLabel(*bearing);
+            }
+            speak(destination + ", " + formatDistance(wp->mRoadRoute->mLength + dist)
+                + " #{Interface:RoadRouteDistance}. "
+                + (wp->mRoadRoute->mUsesFoyada ? "#{Interface:RouteJoin} " : "#{Interface:RoadJoin} ")
+                + formatDistance(dist) + ", " + compassLabel(targetYaw) + ". " + position);
+            return;
+        }
 
         std::string elevation = formatElevation(delta.z());
         std::string msg = wp->mName + ". " + formatDistance(dist)

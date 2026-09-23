@@ -4,6 +4,39 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-23
+
+- **Foyada travel joins the destination-route scanner (experimental).** Terrain's
+  **Roads and foyadas** list can now offer journeys that leave painted roads and
+  follow recognized dry volcanic channels, including the Balmora–Ghostgate
+  connection through Foyada Mamaea. Such entries say "via foyada"; Space and
+  Shift + Enter follow them just like road routes, even when starting in the
+  channel. Terrain slopes are checked against the game's walking limit.
+  The scanner names destinations, not individual foyadas: the terrain records
+  do not carry those names. Recognized materials reused by mods are supported,
+  but other materials may be missed. Terrain connectivity does not guarantee
+  passage past rocks, buildings, gates or damaging lava objects.
+- **Roads now offer destination routes instead of compass choices
+  (experimental).** The scanner names each destination, its compass direction
+  from your current position, and the approximate route length before you start.
+  The direction to the road entrance is given separately. Space and Shift + Enter
+  both join and follow the selected route; there is no direction prompt. Routes take the branches
+  needed to reach their destination, including right-angle bends, rather than
+  stopping because the next turn is not straight ahead. Your current named
+  place and its comma-named districts are excluded; undiscovered destinations
+  are included. Anonymous local road patches no longer appear as destinations.
+  This replaces the earlier experimental design and may still change.
+- **Joining a road no longer requires reaching an exact tile centre.** Road
+  targets use the terrain's height and accept nearby walkable points. Taking
+  over with another walk or lock-on now cancels the old road controller, including
+  between legs. A blocked route is not announced as a road ending or a successful
+  arrival. These changes do not guarantee that every painted route is walkable.
+- **Road-route limits:** destinations must be reached by connected, recognized
+  road textures in their named outdoor area. Bridges and unpainted gaps can
+  therefore leave real routes missing; obstacles can still stop a planned walk.
+  Arrival is at the road approach to the named area, not its centre. The new
+  planner does not invent connections across unknown ground.
+
 ## 2026-09-22
 
 - **Stats Window Extender navigation now follows the visual columns:** down
@@ -71,6 +104,9 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-17
 
+The original road controls below were replaced by destination routes on
+23 September; see that entry and the README for current use.
+
 - **You can now follow a road, not just find one (experimental).** This one is
   new and we would like to know what you make of it: it works, but whether it is
   the *right* shape for the job is still an open question, so it may change
@@ -104,7 +140,8 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 - **Auto-walking to a road now puts you on it.** Walking to a road could leave
   you standing a few metres to one side of it — the same problem levitation
   shafts used to have, where you'd end up at the rim instead of in the column.
-  Roads now use the same exact-arrival rule, so you finish on the road surface.
+  This version required reaching the road tile's exact centre. That could itself
+  cause the walk to get stuck; the 23 September redesign replaces this rule.
 
 ## 2026-09-15
 

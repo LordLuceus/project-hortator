@@ -69,8 +69,8 @@ namespace MWAccessibility
     // Deliberately EXCLUDES the Daedric ruin textures (Tx_Daed_road*): despite the
     // filename those are decorative flagstones inside ruin courtyards, not a road
     // anyone can follow anywhere. Matching is case-insensitive on ASCII and looks
-    // at both the texture id and its filename, since the two disagree for several
-    // entries (index 105's id is literally "Tx_AI_mainroad_01.tga").
+    // at the texture filename returned by the engine's plugin-aware LTEX store.
+    // A road-like record id alone does not classify an opaque texture filename.
     bool isRoadTexture(std::string_view textureName);
 
     // A tile of road, in TILE coordinates: whole-world indices where one unit is
@@ -138,6 +138,8 @@ namespace MWAccessibility
     // Which tile a world-XY position falls in.
     RoadTile roadTileAt(const osg::Vec2f& worldPos);
 
+    // LEGACY baseline retained for characterization tests and comparing the old
+    // experiment with RoadRoutePlanner. Not used by scanner route execution.
     // Pick the next tile when FOLLOWING a road, given where we are and which way
     // we are already going.
     //
