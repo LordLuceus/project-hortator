@@ -53,6 +53,7 @@ namespace MWAccessibility
         const auto key = [](const RoadTile& tile) { return TileKey(tile.mX, tile.mY); };
         std::sort(mTiles.begin(), mTiles.end(), [&](const auto& a, const auto& b) { return key(a) < key(b); });
         mTiles.erase(std::unique(mTiles.begin(), mTiles.end()), mTiles.end());
+        mIndex.reserve(mTiles.size());
         for (std::size_t i = 0; i < mTiles.size(); ++i)
             mIndex.emplace(key(mTiles[i]), i);
         mFoyada.resize(mTiles.size(), false);
@@ -62,6 +63,7 @@ namespace MWAccessibility
         mEdges.resize(mTiles.size());
         for (std::size_t i = 0; i < mTiles.size(); ++i)
         {
+            mEdges[i].reserve(8);
             for (int dx = -1; dx <= 1; ++dx)
                 for (int dy = -1; dy <= 1; ++dy)
                 {

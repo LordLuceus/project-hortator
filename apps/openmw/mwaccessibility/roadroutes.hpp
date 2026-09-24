@@ -6,7 +6,10 @@
 #include <cstddef>
 #include <map>
 #include <optional>
+#include <unordered_map>
 #include <utility>
+
+#include <components/misc/hash.hpp>
 
 namespace MWAccessibility
 {
@@ -63,6 +66,10 @@ namespace MWAccessibility
 
     private:
         using TileKey = std::pair<std::int32_t, std::int32_t>;
+        struct TileKeyHash
+        {
+            std::size_t operator()(const TileKey& key) const { return Misc::hash2dCoord(key.first, key.second); }
+        };
         struct Destination
         {
             std::string mName;
@@ -70,7 +77,9 @@ namespace MWAccessibility
             std::vector<std::size_t> mAnchors;
         };
         std::vector<RoadTile> mTiles;
-        std::map<TileKey, std::size_t> mIndex;
+        // Lookup only: IDs, adjacency and tie-breaking still use sorted mTiles,
+        // never hash iteration order.
+        std::unordered_map<TileKey, std::size_t, TileKeyHash> mIndex;
         std::vector<std::vector<std::pair<std::size_t, double>>> mEdges;
         std::vector<bool> mFoyada;
         std::vector<Destination> mDestinations;

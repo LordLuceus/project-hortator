@@ -25,6 +25,7 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/hazard.cpp
     mwaccessibility/roads.cpp
     mwaccessibility/roadroutes.cpp
+    mwaccessibility/roadnetwork.cpp
     mwaccessibility/foyadas.cpp
     mwaccessibility/luastatsspeech.cpp
     mwaccessibility/statdamage.cpp

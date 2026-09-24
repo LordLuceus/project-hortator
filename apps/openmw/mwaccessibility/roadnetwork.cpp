@@ -5,12 +5,16 @@
 #include <limits>
 #include <map>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include <components/esm3/loadcell.hpp>
 #include <components/esm3/loadland.hpp>
 #include <components/esm3/loadltex.hpp>
+#include <components/esm3/readerscache.hpp>
 #include <components/misc/constants.hpp>
+#include <components/misc/hash.hpp>
 
 #include "../mwbase/environment.hpp"
 #include "../mwworld/esmstore.hpp"
@@ -19,22 +23,66 @@
 
 namespace MWAccessibility
 {
+    namespace
+    {
+        struct CoordinateHash
+        {
+            std::size_t operator()(const auto& key) const { return Misc::hash2dCoord(key.first, key.second); }
+        };
+
+        using EdgeKey = std::pair<std::pair<std::int32_t, std::int32_t>, std::pair<std::int32_t, std::int32_t>>;
+        struct EdgeHash
+        {
+            std::size_t operator()(const EdgeKey& key) const
+            {
+                auto seed = CoordinateHash{}(key.first);
+                Misc::hashCombine(seed, CoordinateHash{}(key.second));
+                return seed;
+            }
+        };
+
+        void loadRoadLandData(const ESM::Land& land, int flags, ESM::Land::LandData& data, ESM::ReadersCache& readers)
+        {
+            // Preserve Land::loadData's handling of in-memory/editor records.
+            if (land.mContext.filename.empty())
+            {
+                land.loadData(flags, data);
+                return;
+            }
+            flags &= land.mDataTypes;
+            if ((data.mDataLoaded & flags) == flags)
+                return;
+
+            // A private, bounded cache for this snapshot only. Each read restores
+            // the winning record's context, including plugin-local texture IDs.
+            // Do not share renderer readers or populate mutable Land caches.
+            auto reader = readers.get(land.getPlugin());
+            reader->restoreContext(land.mContext);
+            ESM::loadLandRecordData(flags, *reader, data);
+        }
+    }
+
     std::unique_ptr<RoadRoutePlanner> loadRoadRoutePlanner()
     {
-        const auto& store = *MWBase::Environment::get().getESMStore();
+        return loadRoadRoutePlanner(*MWBase::Environment::get().getESMStore());
+    }
+
+    std::unique_ptr<RoadRoutePlanner> loadRoadRoutePlanner(const MWWorld::ESMStore& store)
+    {
         const auto& textures = store.get<ESM::LandTexture>();
         const auto& cells = store.get<ESM::Cell>();
+        ESM::ReadersCache readers;
         struct Material
         {
             bool mRoad = false;
             FoyadaMaterial mFoyada = FoyadaMaterial::None;
         };
-        std::map<std::pair<int, std::uint16_t>, Material> textureCache;
+        std::unordered_map<std::pair<int, std::uint16_t>, Material, CoordinateHash> textureCache;
         std::map<std::string, std::vector<RoadTile>> places;
         std::vector<RoadTile> tiles;
-        std::set<std::pair<std::int32_t, std::int32_t>> roadTiles;
+        std::unordered_set<std::pair<std::int32_t, std::int32_t>, CoordinateHash> roadTiles;
         std::vector<FoyadaTile> candidates;
-        std::map<std::pair<std::int32_t, std::int32_t>, std::string> tileNames;
+        std::unordered_map<std::pair<std::int32_t, std::int32_t>, std::string, CoordinateHash> tileNames;
         std::set<std::pair<int, int>> heightCells;
 
         for (const ESM::Land& land : store.get<ESM::Land>())
@@ -48,12 +96,13 @@ namespace MWAccessibility
             // visiting the province must not retain thousands of height grids
             // or mutate terrain data being read by background rendering jobs.
             ESM::Land::LandData data;
-            land.loadData(ESM::Land::DATA_VTEX, data);
+            loadRoadLandData(land, ESM::Land::DATA_VTEX, data, readers);
             if (!(data.mDataLoaded & ESM::Land::DATA_VTEX))
                 continue;
             const ESM::Cell* cell = cells.search(land.mX, land.mY);
             const std::string name = cell ? roadPlaceName(cell->mName) : std::string();
             const int plugin = land.getPlugin();
+            bool needsHeights = false;
             for (int y = 0; y < 16; ++y)
             {
                 for (int x = 0; x < 16; ++x)
@@ -85,11 +134,7 @@ namespace MWAccessibility
                     else
                     {
                         candidates.push_back({ tile, material.mFoyada });
-                        // Include neighbouring height grids for links across a
-                        // cell edge and joins to ordinary painted roads.
-                        for (int dx = -1; dx <= 1; ++dx)
-                            for (int dy = -1; dy <= 1; ++dy)
-                                heightCells.emplace(land.mX + dx, land.mY + dy);
+                        needsHeights = true;
                     }
                     // Reaching this anchor means entering the named area's
                     // actual cell, not merely stopping somewhere near it.
@@ -97,20 +142,27 @@ namespace MWAccessibility
                         tileNames[{ tile.mX, tile.mY }] = name;
                 }
             }
+            // Once per cell, not once per matching texture tile. Neighbours are
+            // still required for boundary links and joins to painted roads.
+            if (needsHeights)
+                for (int dx = -1; dx <= 1; ++dx)
+                    for (int dy = -1; dy <= 1; ++dy)
+                        heightCells.emplace(land.mX + dx, land.mY + dy);
         }
 
         // Temporary native vertex grids: avoid both a persistent terrain cache
         // and the false assumption that a gentle change along an edge implies
         // a walkable surface (a level traverse of a cliff is still a cliff).
         using Heights = std::array<float, ESM::LandRecordData::sLandNumVerts>;
-        std::map<std::pair<int, int>, Heights> heights;
+        std::unordered_map<std::pair<int, int>, Heights, CoordinateHash> heights;
+        heights.reserve(heightCells.size());
         for (const auto& [x, y] : heightCells)
         {
             const ESM::Land* land = store.get<ESM::Land>().search(x, y);
             if (!land)
                 continue;
             ESM::Land::LandData data;
-            land->loadData(ESM::Land::DATA_VHGT, data);
+            loadRoadLandData(*land, ESM::Land::DATA_VHGT, data, readers);
             if (data.mDataLoaded & ESM::Land::DATA_VHGT)
                 heights.emplace(std::make_pair(x, y), data.mHeights);
         }
@@ -123,8 +175,8 @@ namespace MWAccessibility
             return found->second[(y - std::int64_t(cy) * 64) * 65 + x - std::int64_t(cx) * 64];
         };
         const float maxGrade = std::tan(Constants::sMaxSlope * float(std::acos(-1.0)) / 180.f);
-        using EdgeKey = std::pair<std::pair<std::int32_t, std::int32_t>, std::pair<std::int32_t, std::int32_t>>;
-        std::map<EdgeKey, bool> connections;
+        std::unordered_map<EdgeKey, bool, EdgeHash> connections;
+        connections.reserve(candidates.size() * 4);
         const auto canConnect = [&](const RoadTile& a, const RoadTile& b) {
             auto first = std::make_pair(a.mX, a.mY), second = std::make_pair(b.mX, b.mY);
             if (roadTiles.count(first) && roadTiles.count(second))

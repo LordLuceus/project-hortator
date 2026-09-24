@@ -4,6 +4,13 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-24
+
+- **Less delay when first opening Terrain after loading a game.** Preparing
+  road and foyada routes now does less repeated file reading and lookup work,
+  particularly with larger mod lists. The available routes and controls are
+  unchanged; no settings changes are needed.
+
 ## 2026-09-23
 
 - **Foyada travel joins the destination-route scanner (experimental).** Terrain's

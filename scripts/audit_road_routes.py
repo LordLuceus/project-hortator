@@ -265,10 +265,13 @@ if __name__ == '__main__':
     parser.add_argument('--config', type=Path)
     parser.add_argument('--output', type=Path)
     parser.add_argument('--test-data', type=Path, help='Export local tile inputs for the opt-in C++ regression; do not distribute game data')
+    parser.add_argument('--content-list', type=Path, help='Export ordered plugin paths for OPENMW_ROAD_CONTENT_FILES; contains local paths')
     args = parser.parse_args()
     if bool(args.config) == bool(args.plugins):
         parser.error('Supply either --config or ordered plugin paths')
     paths = config_paths(args.config) if args.config else args.plugins
+    if args.content_list:
+        args.content_list.write_text('\n'.join(str(path.resolve()) for path in paths) + '\n', encoding='utf-8')
     report = json.dumps(audit(paths), indent=2)
     if args.test_data:
         tiles, names, unresolved = load(paths)
