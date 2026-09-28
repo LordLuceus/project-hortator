@@ -366,6 +366,9 @@ with a count when the text references any topics -- for example "Entry 47 of 56,
 
 ## Saving and loading
 
+"Saving..." is announced once whether saving shows a progress screen or finishes
+too quickly to display one. This applies to manual saves, quicksaves and autosaves.
+
 | Key | Action |
 | --- | --- |
 | **Up / Down** | Move through your saves |

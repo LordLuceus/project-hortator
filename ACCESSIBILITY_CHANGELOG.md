@@ -6,6 +6,10 @@ Newest changes are listed first. (OpenMW's own engine changelog lives in
 
 ## 2026-09-28
 
+- **"Saving..." no longer falls silent as a playthrough grows.** Saves that
+  display a progress screen now announce its saving label once. Fast saves
+  keep their existing notification, without an extra announcement.
+
 - **Switching between first-person and third-person views is now announced.**
   Tap your view-toggle key (Tab by default) to hear "First person" or "Third
   person" when the change takes effect. Rebound controls work too. Holding the

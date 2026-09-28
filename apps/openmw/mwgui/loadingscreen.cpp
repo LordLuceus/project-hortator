@@ -25,6 +25,7 @@
 #include "../mwbase/statemanager.hpp"
 #include "../mwbase/windowmanager.hpp"
 
+#include "accessibility/speech.hpp"
 #include "backgroundimage.hpp"
 
 namespace MWGui
@@ -326,7 +327,8 @@ namespace MWGui
             changeWallpaper();
         }
 
-        if (!mShowWallpaper && mLastRenderTime < mLoadingOnTime)
+        const bool firstLoadingFrame = mLastRenderTime < mLoadingOnTime;
+        if (!mShowWallpaper && firstLoadingFrame)
         {
             setupCopyFramebufferToTextureCallback();
         }
@@ -354,6 +356,13 @@ namespace MWGui
         mViewer->advance(mViewer->getFrameStamp()->getSimulationTime());
 
         mLastRenderTime = mTimer.time_m();
+
+        // A rendered progress screen suppresses loadingOff's message-box fallback,
+        // which normally supplies speech for fast saves. Narrate the important
+        // label here instead, once per operation, after recording that we drew it.
+        // Reuse the visual lifecycle rather than retaining speech state across saves.
+        if (firstLoadingFrame && mImportantLabel)
+            A11y::say(mLoadingText->getCaption().asUTF8());
     }
 
 }
