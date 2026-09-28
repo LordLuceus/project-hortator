@@ -27,6 +27,7 @@
 #include "roadroutes.hpp"
 #include "roads.hpp"
 #include "verticalshaft.hpp"
+#include "viewmode.hpp"
 
 namespace ESM
 {
@@ -851,6 +852,7 @@ namespace MWAccessibility
         // than announced; reset to false whenever no game is running so each
         // freshly-loaded game is primed afresh.
         bool mCellNamePrimed = false;
+        ViewModeTracker mViewModeTracker;
         // Announce the player's current cell name if it differs from the last
         // one announced (see mLastAnnouncedCellName). Called on cell change.
         void announceCellChange();

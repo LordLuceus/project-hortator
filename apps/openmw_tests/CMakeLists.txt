@@ -30,6 +30,7 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/luastatsspeech.cpp
     mwaccessibility/statdamage.cpp
     mwaccessibility/videodescription.cpp
+    mwaccessibility/viewmode.cpp
 
     mwscript/testscripts.cpp
 )

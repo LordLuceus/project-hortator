@@ -119,6 +119,12 @@ your config file are shared with it, not kept separately. If you already play
 OpenMW and want your existing progress left untouched, back up that folder before
 running this beta.
 
+Tap your view-toggle key (**Tab** by default) to switch between first-person and
+third-person views. You hear "First person" or "Third person" when the change
+takes effect. This follows your configured controls, not a fixed Tab shortcut.
+Holding the key for the temporary camera preview does not announce a switch;
+neither does loading a saved game.
+
 ---
 
 ## Core concepts

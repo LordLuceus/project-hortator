@@ -81,8 +81,10 @@
 #include "../mwphysics/collisiontype.hpp"
 #include "../mwphysics/raycasting.hpp"
 
+#include "../mwrender/camera.hpp"
 #include "../mwrender/vismask.hpp"
 
+#include "../mwgui/accessibility/speech.hpp"
 #include "../mwgui/tooltips.hpp"
 
 #include "../mwbase/environment.hpp"
@@ -1042,6 +1044,7 @@ namespace MWAccessibility
         mDirectionFilterActive = false;
         mDirectionSector = -1;
         mCellNamePrimed = false;
+        mViewModeTracker.reset();
         mMeleeReachCooldown = 0.f;
         mPendingJournalCue = 0;
         mExpiryWarned.clear();
@@ -1433,6 +1436,23 @@ namespace MWAccessibility
         MWWorld::Ptr player = world->getPlayerPtr();
         if (player.isEmpty())
             return;
+
+        // Observe the camera, not Tab: rebound/controller/Lua controls take the
+        // same path. Skip temporary views and queued transitions. In particular,
+        // vanilla can briefly use ThirdPerson while queuing Preview -> FirstPerson;
+        // that is not a new primary view to announce.
+        const auto* camera = world->getCamera();
+        std::optional<bool> firstPerson;
+        if (!camera->getQueuedMode())
+        {
+            if (camera->getMode() == MWRender::Camera::Mode::FirstPerson)
+                firstPerson = true;
+            else if (camera->getMode() == MWRender::Camera::Mode::ThirdPerson)
+                firstPerson = false;
+        }
+        if (const auto changedView = mViewModeTracker.update(firstPerson))
+            MWGui::A11y::say(*changedView ? "#{Interface:FirstPersonView}" : "#{Interface:ThirdPersonView}",
+                /*interrupt=*/true);
 
         // Service a teleport requested from the key handler. Done here, outside
         // SDL's event callback, because the confirmation is a blocking modal

@@ -4,6 +4,14 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-09-28
+
+- **Switching between first-person and third-person views is now announced.**
+  Tap your view-toggle key (Tab by default) to hear "First person" or "Third
+  person" when the change takes effect. Rebound controls work too. Holding the
+  key for a temporary camera preview does not announce a view change, and
+  loading a saved game does not add an announcement.
+
 ## 2026-09-24
 
 - **Less delay when first opening Terrain after loading a game.** Preparing

@@ -128,6 +128,7 @@ key ends the whole route, not just the current stretch.
 | **Ctrl + Down** | Turn around 180 degrees |
 | **Shift + Up / Down** | Aim your view up / down a step, through five fixed stops (straight up, up, level, down, straight down). Use it to fly with Levitation, or surface and dive while swimming |
 | **Shift + Home** | Snap your view back to level |
+| **Tab** (default) | In gameplay, switch between first-person and third-person views; the new view is announced. Uses your configured view-toggle binding |
 | **N** | Drop a named map note at your position |
 
 ---
@@ -471,7 +472,7 @@ Most keys do one job everywhere. These don't, so they're worth knowing:
 | --- | --- |
 | **T** | Journal, while reading: open the topics browser. **Everywhere else** (including the journal's own lists): read out extra detail for the focused thing |
 | **Delete** | Normal inventory only: drop the item (not while using a container, companion or merchant). Magic window: delete the spell. Save/Load: delete the save. While typing: delete a character |
-| **Tab** | Settings: next tab. Journal lists: switch between Topics and Quests. Elsewhere: switch between side-by-side panes |
+| **Tab** | In the world: switch first-person / third-person view (default binding). Settings: next tab. Journal lists: switch between Topics and Quests. Elsewhere: switch between side-by-side panes |
 | **E** | Your inventory: your encumbrance. A companion's: theirs. Alchemy: re-read the potion's effects |
 | **Ctrl + Left / Right** | Inventory: change category filter. Editing a spell effect: adjust a slider by 10. In the world: turn to the next compass point |
 | **Ctrl + Up / Down** | Journal, while reading: move by journal entry. Conversations: jump to an unexhausted topic. In the world, Ctrl+Up is the direction filter and Ctrl+Down turns you around. In menus: jump between sections. In the launcher's Content Files tab: move a mod up or down the load order |
