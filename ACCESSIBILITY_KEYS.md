@@ -131,6 +131,25 @@ key ends the whole route, not just the current stretch.
 | **Tab** (default) | In gameplay, switch between first-person and third-person views; the new view is announced. Uses your configured view-toggle binding |
 | **N** | Drop a named map note at your position |
 
+### Screenshots
+
+| Key | Action |
+| --- | --- |
+| **F12** (default) | In gameplay, open screenshot framing choices (experimental). Uses your configured screenshot binding |
+| **Shift + F12** (default) | Take an ordinary screenshot without opening the menu. Hold Shift with your configured screenshot key |
+| **Up / Down** | In capture menus, choose an option |
+| **Enter** | Activate the chosen option; select Cancel to leave without capturing |
+| **Escape** | Cancel a capture menu, or dismiss the saved-pictures confirmation |
+| **R** | In capture menus, repeat the prompt |
+
+Select a character or object in the scanner before choosing **Selected scanner
+target**. Whole-subject and upper-half close-up framing stay at your current
+camera position. **Surroundings** offers ahead or four directions; **What is
+blocking me?** saves a view ahead and a second view aimed near your feet.
+Use **Open screenshot folder**, or **Open saved pictures** after capture, to
+find the PNG files. See [the screenshot guide](ACCESSIBILITY_README.md#screenshots-experimental)
+for the framing limitations. Ordinary screenshots outside gameplay are unchanged.
+
 ---
 
 ## The accessible HUD

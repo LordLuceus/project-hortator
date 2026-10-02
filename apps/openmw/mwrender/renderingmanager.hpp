@@ -15,6 +15,7 @@
 
 #include <deque>
 #include <memory>
+#include <optional>
 #include <span>
 #include <unordered_map>
 
@@ -167,6 +168,8 @@ namespace MWRender
 
         /// Take a screenshot of w*h onto the given image, not including the GUI.
         void screenshot(osg::Image* image, int w, int h);
+        /// HUD-free, camera-only monoscopic capture; restores all temporary render state.
+        void screenshot(osg::Image* image, int w, int h, const osg::Matrix& view, float verticalFov);
 
         struct RayResult
         {
@@ -356,6 +359,7 @@ namespace MWRender
         float mNearClip;
         float mViewDistance;
         bool mFieldOfViewOverridden;
+        std::optional<float> mScreenshotFov;
         float mFieldOfViewOverride;
         float mFieldOfView;
         float mFirstPersonFieldOfView;

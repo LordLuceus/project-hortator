@@ -97,6 +97,9 @@ namespace MWRender
         const osg::Vec3d& getPosition() const { return mPosition; }
         void setStaticPosition(const osg::Vec3d& pos);
 
+        /// Render-only view override. Never changes player rotation, tracking or camera mode.
+        void setScreenshotView(const std::optional<osg::Matrix>& view) { mScreenshotView = view; }
+
         bool isVanityOrPreviewModeEnabled() const { return mMode == Mode::Vanity || mMode == Mode::Preview; }
         Mode getMode() const { return mMode; }
         std::optional<Mode> getQueuedMode() const { return mQueuedMode; }
@@ -114,6 +117,7 @@ namespace MWRender
         const osg::Matrixf& getProjectionMatrix() const { return mProjectionMatrix; }
 
     private:
+        std::optional<osg::Matrix> mScreenshotView;
         MWWorld::Ptr mTrackingPtr;
         osg::ref_ptr<const osg::Node> mTrackingNode;
         osg::Vec3d mTrackedPosition;

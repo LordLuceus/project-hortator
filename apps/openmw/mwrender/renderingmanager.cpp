@@ -773,6 +773,47 @@ namespace MWRender
         mScreenshotManager->screenshot(image, w, h);
     }
 
+    void RenderingManager::screenshot(osg::Image* image, int w, int h, const osg::Matrix& view, float verticalFov)
+    {
+        // The existing readback crops an eye in stereo mode; it is not a mono
+        // capture API. Refuse rather than save a misleading stereo/half image.
+        if (Stereo::getStereo())
+            throw std::runtime_error("Framed screenshots require monoscopic rendering");
+        auto* camera = mViewer->getCamera();
+        const auto mask = camera->getCullMask();
+        const auto playerMask = mPlayerNode ? mPlayerNode->getNodeMask() : 0u;
+        const auto offset = mProjectionOffset;
+        const auto restore = [&] {
+            mCamera->setScreenshotView(std::nullopt);
+            mScreenshotFov.reset();
+            mProjectionOffset = offset;
+            camera->setCullMask(mask);
+            if (mPlayerNode)
+                mPlayerNode->setNodeMask(playerMask);
+            updateProjectionMatrix();
+            mCamera->updateCamera(camera);
+        };
+        try
+        {
+            mCamera->setScreenshotView(view);
+            mScreenshotFov = verticalFov;
+            mProjectionOffset = osg::Vec2f();
+            camera->setCullMask(mask & ~(Mask_Player | Mask_FirstPerson | Mask_Debug));
+            // Water reflection/refraction use independent camera masks.
+            // Hide the node as well so those passes cannot retain the player.
+            if (mPlayerNode)
+                mPlayerNode->setNodeMask(0);
+            updateProjectionMatrix();
+            mScreenshotManager->screenshot(image, w, h);
+        }
+        catch (...)
+        {
+            restore();
+            throw;
+        }
+        restore();
+    }
+
     osg::Vec2f RenderingManager::getScreenCoords(const osg::BoundingBox& bb)
     {
         if (bb.valid())
@@ -1126,7 +1167,7 @@ namespace MWRender
         const int height = Settings::video().mResolutionY;
 
         const double aspect = (height == 0) ? 1.0 : static_cast<double>(width) / height;
-        const float fov = mFieldOfViewOverridden ? mFieldOfViewOverride : mFieldOfView;
+        const float fov = mScreenshotFov.value_or(mFieldOfViewOverridden ? mFieldOfViewOverride : mFieldOfView);
 
         osg::Matrix unreversedProjectionMatrix = osg::Matrix::perspective(fov, aspect, mNearClip, mViewDistance);
 

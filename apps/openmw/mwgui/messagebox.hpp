@@ -34,7 +34,7 @@ namespace MWGui
         void createMessageBox(std::string_view message, bool stat = false, bool isSubtitle = false);
         void removeStaticMessageBox();
         bool createInteractiveMessageBox(std::string_view message, const std::vector<std::string>& buttons,
-            bool immediate = false, int defaultFocus = -1);
+            bool immediate = false, int defaultFocus = -1, int cancelButton = -1);
         bool isInteractiveMessageBox();
 
         std::size_t getMessagesCount();
@@ -101,13 +101,13 @@ namespace MWGui
     {
     public:
         InteractiveMessageBox(MessageBoxManager& parMessageBoxManager, const std::string& message,
-            const std::vector<std::string>& buttons, bool immediate, size_t defaultFocus);
+            const std::vector<std::string>& buttons, bool immediate, size_t defaultFocus, int cancelButton);
         void mousePressed(MyGUI::Widget* widget);
         int readPressedButton();
 
         MyGUI::Widget* getDefaultKeyFocus() override;
 
-        bool exit() override { return false; }
+        bool exit() override;
 
         bool mMarkedToDelete;
 
@@ -136,6 +136,9 @@ namespace MWGui
         int mButtonPressed;
         size_t mDefaultFocus;
         bool mImmediate;
+        // Opt-in accessible menus use a stable vertical focus order and Escape.
+        // Ordinary game choice dialogs retain their existing layout and gating.
+        int mCancelButton;
         size_t mControllerFocus = 0;
 
         // Returns the spoken form of button \p i: "<label>, button".

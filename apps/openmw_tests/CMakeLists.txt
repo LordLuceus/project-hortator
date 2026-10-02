@@ -31,6 +31,9 @@ file(GLOB UNITTEST_SRC_FILES
     mwaccessibility/statdamage.cpp
     mwaccessibility/videodescription.cpp
     mwaccessibility/viewmode.cpp
+    mwaccessibility/captureframing.cpp
+    mwaccessibility/capturefiles.cpp
+    mwaccessibility/capturecamera.cpp
 
     mwscript/testscripts.cpp
 )

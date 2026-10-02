@@ -129,6 +129,53 @@ takes effect. This follows your configured controls, not a fixed Tab shortcut.
 Holding the key for the temporary camera preview does not announce a switch;
 neither does loading a saved game.
 
+### Screenshots (experimental)
+
+> Screenshot framing is experimental: the presets may not choose the most useful
+> composition and may change or be replaced. Please tell us which views help and
+> which do not. Ordinary screenshots, taken by holding Shift with your screenshot
+> key, are not experimental.
+
+Press your screenshot key (**F12** by default) in gameplay to open the capture
+menu. Use Up, Down and Enter; **R** repeats the prompt. Press **Escape** or select
+**Cancel** to leave without taking a picture. The game simulation pauses during
+the menu and capture sequence, then resumes when you return; this does not cancel
+an active auto-walk.
+
+- **Current view:** a clean picture in the direction your camera is looking.
+- **Selected scanner target:** select a character or object in the scanner first.
+  The menu names the selected subject so you can check it before capturing.
+  Choose whole-subject framing or a close-up of its upper half. Close-up is
+  not face recognition. The camera aims and adjusts its field of view; it does
+  not move around the subject, make an NPC face you, or look through walls.
+- **Surroundings:** one level view ahead, or four separate views: front, right,
+  back and left, relative to your character's facing.
+- **Wide landscape:** a level, wider-angle view in your character's facing
+  direction. Indoors it photographs the interior, not the landscape outside it.
+- **What is blocking me?:** two pictures, one ahead and one aimed at the ground
+  near your feet. Your character is not moved or turned to recreate the problem.
+
+These captures omit the HUD and your own body/weapon. Your normal camera mode,
+field of view and visibility settings are restored afterwards. An obscured
+target is refused; a partially obscured target or nearby obstruction prompts
+you before proceeding. These are approximate geometry checks: transparent
+surfaces, foliage, effects and darkness can still make a picture unhelpful.
+Unusual model bounds may prevent framing. Images cannot diagnose invisible
+collision shapes or navigation-mesh faults by themselves.
+
+Success or failure is spoken regardless of the ordinary screenshot-notification
+setting. Each capture gets a new dated folder inside **Hortator Captures**, under
+your usual OpenMW screenshot folder. It contains descriptively named PNG files and
+a short text file identifying the location and, when applicable, your selected
+subject. Choose **Open saved pictures** afterwards, or **Open screenshot folder**
+in the capture menu, to find them. Failed batches may leave completed pictures
+in their folder. Nothing is uploaded; you decide what to share and with whom.
+
+Pictures use your current game-window resolution, not a higher-resolution render.
+Framed captures currently require non-stereo rendering. **Shift + F12** (or Shift
+with your rebound screenshot key) keeps the ordinary screenshot path, including
+its usual overlays. Outside gameplay the screenshot key behaves normally.
+
 ---
 
 ## Core concepts

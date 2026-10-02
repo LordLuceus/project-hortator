@@ -141,8 +141,8 @@ namespace MWGui
         mStaticMessageBox = nullptr;
     }
 
-    bool MessageBoxManager::createInteractiveMessageBox(
-        std::string_view message, const std::vector<std::string>& buttons, bool immediate, int defaultFocus)
+    bool MessageBoxManager::createInteractiveMessageBox(std::string_view message,
+        const std::vector<std::string>& buttons, bool immediate, int defaultFocus, int cancelButton)
     {
         if (mInterMessageBoxe != nullptr)
         {
@@ -150,8 +150,8 @@ namespace MWGui
             mInterMessageBoxe->setVisible(false);
         }
 
-        mInterMessageBoxe
-            = std::make_unique<InteractiveMessageBox>(*this, std::string{ message }, buttons, immediate, defaultFocus);
+        mInterMessageBoxe = std::make_unique<InteractiveMessageBox>(
+            *this, std::string{ message }, buttons, immediate, defaultFocus, cancelButton);
         mLastButtonPressed = -1;
 
         return true;
@@ -232,14 +232,15 @@ namespace MWGui
     }
 
     InteractiveMessageBox::InteractiveMessageBox(MessageBoxManager& parMessageBoxManager, const std::string& message,
-        const std::vector<std::string>& buttons, bool immediate, size_t defaultFocus)
+        const std::vector<std::string>& buttons, bool immediate, size_t defaultFocus, int cancelButton)
         : WindowModal(MWBase::Environment::get().getWindowManager()->isGuiMode()
-                ? "openmw_interactive_messagebox_notransp.layout"
-                : "openmw_interactive_messagebox.layout")
+                  ? "openmw_interactive_messagebox_notransp.layout"
+                  : "openmw_interactive_messagebox.layout")
         , mMessageBoxManager(parMessageBoxManager)
         , mButtonPressed(-1)
         , mDefaultFocus(defaultFocus)
         , mImmediate(immediate)
+        , mCancelButton(cancelButton >= 0 && static_cast<size_t>(cancelButton) < buttons.size() ? cancelButton : -1)
         , mControllerFocus(0)
     {
         int textPadding = 10; // padding between text-widget and main-widget
@@ -313,7 +314,7 @@ namespace MWGui
         }
 
         MyGUI::IntSize mainWidgetSize;
-        if (buttonsWidth < textSize.width)
+        if (mCancelButton < 0 && buttonsWidth < textSize.width)
         {
             // on one line
             mainWidgetSize.width = textSize.width + 3 * textPadding;
@@ -513,9 +514,15 @@ namespace MWGui
 
     void InteractiveMessageBox::onButtonKeyPressed(MyGUI::Widget* /*sender*/, MyGUI::KeyCode key, MyGUI::Char /*ch*/)
     {
-        // R re-reads the prompt. Every other key (arrows, Tab, Enter, Space,
-        // Escape) is left untouched for the engine's keyboard navigation, which
-        // already moves focus between the choices and activates them.
+        // Blocking message boxes disable gameplay bindings, including A_GameMenu.
+        // Handle opted-in cancellation here, where the GUI actually receives Escape.
+        if (key == MyGUI::KeyCode::Escape && mCancelButton >= 0)
+        {
+            exit();
+            return;
+        }
+        // R re-reads the prompt. Navigation/activation stay with MyGUI; ordinary
+        // non-cancellable game dialogs still leave Escape untouched.
         if (key == MyGUI::KeyCode::R)
             A11y::reread();
     }
@@ -523,6 +530,14 @@ namespace MWGui
     void InteractiveMessageBox::mousePressed(MyGUI::Widget* widget)
     {
         buttonActivated(widget);
+    }
+
+    bool InteractiveMessageBox::exit()
+    {
+        if (mCancelButton < 0)
+            return false;
+        buttonActivated(mButtons[mCancelButton]);
+        return true;
     }
 
     void InteractiveMessageBox::buttonActivated(MyGUI::Widget* widget)

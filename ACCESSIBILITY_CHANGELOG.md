@@ -4,6 +4,17 @@ A running log of screen-reader accessibility features added to this OpenMW fork.
 Newest changes are listed first. (OpenMW's own engine changelog lives in
 `CHANGELOG.md`.)
 
+## 2026-10-02
+
+- **Screenshot framing (experimental).** In gameplay, your screenshot key
+  (F12 by default) opens a spoken capture menu. Photograph the selected scanner
+  target, your surroundings in one or four directions, a wide landscape, or the
+  view ahead and ground near your feet when something blocks you. Captures stay
+  on your computer for you to share with a friend or an AI of your choice.
+  Framing is provisional: it may need different choices or angles, and feedback
+  is welcome. Hold Shift with the screenshot key for an ordinary screenshot;
+  that existing feature is not experimental.
+
 ## 2026-09-28
 
 - **"Saving..." no longer falls silent as a playthrough grows.** Saves that

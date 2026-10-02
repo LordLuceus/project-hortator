@@ -98,6 +98,12 @@ namespace SceneUtil
             return std::string();
         }
 
+        outStream.close();
+        if (!outStream)
+        {
+            Log(Debug::Error) << "Error: Could not finish writing screenshot: " << lastFilePath;
+            return std::string();
+        }
         return lastFileName;
     }
 

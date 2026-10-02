@@ -6,6 +6,7 @@
 
 #include <components/settings/values.hpp>
 
+#include "../mwaccessibility/scenecapture.hpp"
 #include "../mwbase/environment.hpp"
 #include "../mwbase/inputmanager.hpp"
 #include "../mwbase/luamanager.hpp"
@@ -168,6 +169,9 @@ namespace MWInput
 
     void ActionManager::screenshot()
     {
+        // Keep Shift + the configured screenshot key as the unmodified capture.
+        if (!(SDL_GetModState() & KMOD_SHIFT) && MWAccessibility::requestSceneCapture())
+            return;
         mScreenCaptureHandler->setFramesToCapture(1);
         mScreenCaptureHandler->captureNextFrame(*mViewer);
     }

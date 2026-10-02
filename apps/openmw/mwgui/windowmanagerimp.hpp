@@ -284,7 +284,7 @@ namespace MWGui
         void staticMessageBox(std::string_view message) override;
         void removeStaticMessageBox() override;
         void interactiveMessageBox(std::string_view message, const std::vector<std::string>& buttons = {},
-            bool block = false, int defaultFocus = -1) override;
+            bool block = false, int defaultFocus = -1, int cancelButton = -1) override;
 
         int readPressedButton() override; ///< returns the index of the pressed button or -1 if no button was pressed
                                           ///< (->MessageBoxmanager->InteractiveMessageBox)

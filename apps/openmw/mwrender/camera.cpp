@@ -109,6 +109,13 @@ namespace MWRender
 
     void Camera::updateCamera(osg::Camera* cam)
     {
+        if (mScreenshotView)
+        {
+            cam->setViewMatrix(*mScreenshotView);
+            mViewMatrix = cam->getViewMatrix();
+            mProjectionMatrix = cam->getProjectionMatrix();
+            return;
+        }
         osg::Quat orient = getOrient();
         osg::Vec3d forward = orient * osg::Vec3d(0, 1, 0);
         osg::Vec3d up = orient * osg::Vec3d(0, 0, 1);

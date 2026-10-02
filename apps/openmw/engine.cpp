@@ -56,6 +56,7 @@
 #include <components/settings/values.hpp>
 
 #include "mwaccessibility/scanner.hpp"
+#include "mwaccessibility/scenecapture.hpp"
 #include "mwinput/inputmanagerimp.hpp"
 
 #include "mwgui/windowmanagerimp.hpp"
@@ -231,6 +232,8 @@ bool OMW::Engine::frame(unsigned frameNumber, float frametime)
             // It applies to the game world queued changes from the previous frame.
             mLuaManager->synchronizedUpdate();
         }
+
+        MWAccessibility::updateSceneCapture(*mViewer, mCfgMgr.getScreenshotPath());
 
         // Tick the accessibility scanner after Lua sync so any actor-
         // control writes the scanner makes (auto-walk forward + yaw)

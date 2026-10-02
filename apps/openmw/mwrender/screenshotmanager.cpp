@@ -109,15 +109,26 @@ namespace MWRender
 
         // Ref https://gitlab.com/OpenMW/openmw/-/issues/6013
         mDrawCompleteCallback->reset(mViewer->getFrameStamp()->getFrameNumber());
+        osg::ref_ptr<osg::Camera::DrawCallback> previousCallback = mViewer->getCamera()->getFinalDrawCallback();
         mViewer->getCamera()->setFinalDrawCallback(mDrawCompleteCallback);
-        mViewer->eventTraversal();
-        mViewer->updateTraversal();
-        mViewer->renderingTraversals();
-        mDrawCompleteCallback->waitTillDone();
+        try
+        {
+            mViewer->eventTraversal();
+            mViewer->updateTraversal();
+            mViewer->renderingTraversals();
+            mDrawCompleteCallback->waitTillDone();
+        }
+        catch (...)
+        {
+            camera->removeChild(tempDrw);
+            mViewer->getCamera()->setFinalDrawCallback(previousCallback);
+            throw;
+        }
 
         // now that we've "used up" the current frame, get a fresh frame number for the next frame() following after the
         // screenshot is completed
         mViewer->advance(mViewer->getFrameStamp()->getSimulationTime());
         camera->removeChild(tempDrw);
+        mViewer->getCamera()->setFinalDrawCallback(previousCallback);
     }
 }
